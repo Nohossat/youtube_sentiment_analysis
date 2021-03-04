@@ -1,0 +1,5 @@
+mongo/mongo-volume
+.idea
+__pycache__
+mongo/.ipynb_checkpoints/
+.ipynb_checkpoints/

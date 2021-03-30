@@ -4,12 +4,14 @@ RUN /usr/local/bin/python -m pip install --upgrade pip
 RUN mkdir /api
 RUN mkdir /api/data
 RUN mkdir /api/src
+RUN mkdir /api/models
 
 WORKDIR /api
 
 COPY setup.cfg .
 COPY setup.py .
 COPY data/comments.csv ./data
+COPY models/sentiment_pipe.joblib ./models
 COPY src ./src
 COPY requirements.txt .
 

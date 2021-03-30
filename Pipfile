@@ -30,6 +30,7 @@ nltk = "*"
 lightgbm = "*"
 psutil = "*"
 dill = "*"
+pytest-cov = "*"
 
 [dev-packages]
 

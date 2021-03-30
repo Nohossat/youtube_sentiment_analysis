@@ -1,9 +1,11 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 import os
 import re
 import joblib
+import secrets
 
 from lightgbm import LGBMClassifier
 from sklearn.svm import SVC
@@ -11,14 +13,16 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import neptune
 
-import api
+# import api
 from preprocessing import split_data
 from modeling import get_model
 from monitoring import record_metadata
 
 app = FastAPI()
+security = HTTPBasic()
 
-module_path = os.path.dirname(os.path.dirname(api.__file__))
+module_path = os.path.dirname(os.path.dirname(__file__))
+print(os.path.dirname(__file__))
 
 
 class Comment(BaseModel):
@@ -40,13 +44,28 @@ class Grid(BaseModel):
     model_estimator: str = "SVC"
 
 
+def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
+    # export these into a MongoCollection
+    correct_username = secrets.compare_digest(credentials.username, "stanleyjobson")
+    correct_password = secrets.compare_digest(credentials.password, "sword")
+
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
+
 @app.post("/")
-async def infer(comment: Comment):
+async def infer(comment: Comment, credentials: HTTPBasicCredentials = Depends(get_current_username)):
     res = None
 
     try:
         # get a model
         model_dirpath = os.path.join(module_path, "models")
+        print(module_path, model_dirpath)
         model = joblib.load(f"{model_dirpath}/{comment.model}.joblib")
         pred = model.predict([comment.msg])[0]
         prediction = "Positive" if pred else "Negative"
@@ -58,7 +77,7 @@ async def infer(comment: Comment):
 
 
 @app.post("/train")
-async def train(params: Model):
+async def train(params: Model, credentials: HTTPBasicCredentials = Depends(get_current_username)):
     try:
         data = pd.read_csv(params.data_path)
     except FileNotFoundError:
@@ -100,7 +119,7 @@ async def train(params: Model):
 
 
 @app.get("/models")
-async def get_available_models():
+async def get_available_models(credentials: HTTPBasicCredentials = Depends(get_current_username)):
     """
         display available models
         :return: list
@@ -120,7 +139,7 @@ async def get_available_models():
 
 
 @app.get("/report")
-async def report():
+async def report(credentials: HTTPBasicCredentials = Depends(get_current_username)):
     """
     Get Report Board as a Pandas Dataframe converted to JSON
     :return: JSON

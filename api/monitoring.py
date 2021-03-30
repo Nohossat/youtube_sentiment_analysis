@@ -5,7 +5,7 @@ import neptune
 import pandas as pd
 import os
 
-import api
+# import api
 from preprocessing import split_data
 from scoring import compute_metrics_cv, compute_metrics
 from modeling import get_model, run_grid_search, create_pipeline
@@ -16,7 +16,7 @@ import joblib
 import dill
 import datetime
 
-module_path = os.path.dirname(os.path.dirname(api.__file__))
+module_path = os.path.dirname(os.path.dirname(__file__))
 
 def create_exp(hyper_params, tags):
     neptune.create_experiment(

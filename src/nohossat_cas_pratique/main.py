@@ -17,7 +17,7 @@ import neptune
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
 from nohossat_cas_pratique.modeling import get_model
-from nohossat_cas_pratique.run_models_script import record_metadata
+from scripts.run_models_script import record_metadata
 
 app = FastAPI()
 security = HTTPBasic()

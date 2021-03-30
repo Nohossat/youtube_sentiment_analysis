@@ -12,5 +12,5 @@ addons:
     token:
       secure: "i7MdVRHXK6TrtYAv1QY2ePK+u1gM/ylFBL+zbMT8W1sQzTuth0Az+sH2cX4aPcnLMlnBLh7S4z+ha/iWbMDzCvY88jILPK9LNpkcbexvmmpLm0L0q+DLiDOs7q3kpICdah/mqLWmqz6SmhhEs96/LwGJ1n5OLO0wL3CXuLr1ZOQ4V3lMyn7s6DwSfw1WcCL09s7TCAGTjWfxApYVCzyNhs0SDJkf3uIihFAKfvGDwCWyKAc/f1sjQRr12qPhWctmL53X8RfwgzcVNjqTjL8sZfA+L6FEPt7m5H4EGHDVuswoQUuW22a0DjQFRy1hRs9endeoK8ruvQyqN8FWeWiSi+lBKHdUsfMM0g0osSCtvMefKa9WssZelhBnRBSJV03vveIQk0TucsIJipGUdulLC9ovrit4Fhy/JPJ4Zlx4TQ5rKBERgPdZ4DH6lOJsEEJuvtqafei++/wfMFpjyGHgPZUyCGuxPL2yyo5V0xlGdjnMNqAB63/Gfdmkv07QTm8jeGgR4Y04SsJDmdysx7zf73RrmfnCZcPlxCo9zWRi6sl2gX0i2s9Zp9M6/7PSlk0KS3lMAR4BKF+U9dZup9LjXLaRK9n4haXgn7YKNWvq1Ypxy2hzOwyarEyNRft1TMC0OglShRNFoFxvmdWc2d7V2G55LaOWbNUkFRlp66z7r4M="
 script:
-  - pytest
+  - pytest --cov-report xml:tests/coverage.xml --cov=nohossat_cas_pratique tests/
   - sonar-scanner

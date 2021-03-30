@@ -20,8 +20,6 @@ module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_prati
 if __name__ == "__main__":
 
     # config logging
-    # logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
-
     try:
         logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
     except FileNotFoundError:

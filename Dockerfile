@@ -6,6 +6,9 @@ RUN mkdir /api/data
 RUN mkdir /api/src
 RUN mkdir /api/models
 
+ENV LOGIN=user
+ENV PASSWORD=pass
+
 WORKDIR /api
 
 COPY setup.cfg .

@@ -8,3 +8,4 @@ tmp
 logs
 models/
 Pipfile.lock
+src/nohossat_cas_pratique.egg-info

@@ -20,7 +20,18 @@ module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_prati
 if __name__ == "__main__":
 
     # config logging
-    logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
+    # logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
+
+    try:
+        logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
+    except FileNotFoundError:
+        logs_folder = os.path.join(module_path, "logs")
+        filename = os.path.join(logs_folder, "monitoring.log")
+        os.mkdir(logs_folder)
+        with open(filename, "w") as f:
+            f.write("")
+
+        logging.basicConfig(filename=filename, level=logging.DEBUG)
 
     # parser config
     parser = argparse.ArgumentParser()

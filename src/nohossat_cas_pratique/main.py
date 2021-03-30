@@ -25,7 +25,16 @@ security = HTTPBasic()
 # config logging
 module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
 
-logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
+try:
+    logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
+except FileNotFoundError:
+    logs_folder = os.path.join(module_path, "logs")
+    filename = os.path.join(logs_folder, "monitoring.log")
+    os.mkdir(logs_folder)
+    with open(filename, "w") as f:
+        f.write("")
+
+    logging.basicConfig(filename=filename, level=logging.DEBUG)
 
 
 class Comment(BaseModel):

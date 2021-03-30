@@ -1,4 +1,4 @@
-# Sentiment analysis API
+# Sentiment analysis API - in progress
 
 This FastAPI application helps you infering, training and evaluating your sentiment analysis models.
 

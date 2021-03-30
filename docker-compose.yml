@@ -1,0 +1,34 @@
+version : '3.7'
+services:
+    youtube_sentiment_api:
+        build:
+            context: '.'
+            dockerfile: './Dockerfile'
+        image : 'youtube_sentiment_api'
+        volumes:
+            - ./tmp:/tmp
+        ports:
+            - '0.0.0.0:3000:8000'
+        networks:
+            - youtube_sentiment_net
+    mongodb:
+        image : 'mongo'
+        container_name: mongodb
+        hostname: mongodb
+        environment:
+            - MONGO_INITDB_DATABASE=admin
+            - MONGO_INITDB_ROOT_USERNAME=youtube-admin
+            - MONGO_INITDB_ROOT_PASSWORD=youtube-pass
+            - DB_NAME=youtube-sentiment-analysis
+        volumes:
+            - ./mongo/mongo-volume:/data/db
+            - ./mongo/comments.csv:/comments.csv
+            - ./mongo/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
+        ports:
+            - '27018:27017'
+        networks:
+            - youtube_sentiment_net
+
+networks:
+    youtube_sentiment_net:
+        driver: bridge

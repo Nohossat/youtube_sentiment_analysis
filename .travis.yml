@@ -6,5 +6,10 @@ install:
   - python3 -m spacy download fr_core_news_sm
 addons:
   chrome: stable
+  sonarcloud:
+    organization: "nohossat-cas-pratique-1"
+    token:
+      secure: $SONAR_TOKEN
 script:
   - pytest
+  - sonar-scanner

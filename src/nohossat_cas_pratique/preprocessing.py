@@ -1,12 +1,25 @@
-from sklearn.base import BaseEstimator, TransformerMixin
-
 import re
 
+from sklearn.base import BaseEstimator, TransformerMixin
 from stop_words import get_stop_words
 from nltk.stem.snowball import SnowballStemmer
 import spacy
 
 nlp = spacy.load("fr_core_news_sm")
+
+
+def split_data(data):
+    """
+    split dataset between features and label
+    :param data: Pandas DataFrame
+    :return:
+    """
+    target = "sentiment"
+    X = data.drop(target, axis = 1)
+    X = [comment[0] for comment in X.values]
+    y = data[target]
+    y = y.values.tolist()
+    return X, y
 
 
 class NLPCleaner(BaseEstimator, TransformerMixin):

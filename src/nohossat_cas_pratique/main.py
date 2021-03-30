@@ -6,6 +6,7 @@ import os
 import re
 import joblib
 import secrets
+import logging
 
 from lightgbm import LGBMClassifier
 from sklearn.svm import SVC
@@ -13,16 +14,18 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import neptune
 
-# import api
-from preprocessing import split_data
-from modeling import get_model
-from monitoring import record_metadata
+import nohossat_cas_pratique
+from nohossat_cas_pratique.preprocessing import split_data
+from nohossat_cas_pratique.modeling import get_model
+from nohossat_cas_pratique.run_models_script import record_metadata
 
 app = FastAPI()
 security = HTTPBasic()
 
-module_path = os.path.dirname(os.path.dirname(__file__))
-print(os.path.dirname(__file__))
+# config logging
+module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
+
+logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
 
 
 class Comment(BaseModel):
@@ -44,11 +47,10 @@ class Grid(BaseModel):
     model_estimator: str = "SVC"
 
 
-def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
+def validate_access(credentials: HTTPBasicCredentials = Depends(security)):
     # export these into a MongoCollection
-    correct_username = secrets.compare_digest(credentials.username, "stanleyjobson")
-    correct_password = secrets.compare_digest(credentials.password, "sword")
-
+    correct_username = secrets.compare_digest(credentials.username, os.getenv('LOGIN'))
+    correct_password = secrets.compare_digest(credentials.password, os.getenv('PASSWORD'))
     if not (correct_username and correct_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -59,13 +61,12 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
 
 
 @app.post("/")
-async def infer(comment: Comment, credentials: HTTPBasicCredentials = Depends(get_current_username)):
+async def infer(comment: Comment, credentials: HTTPBasicCredentials = Depends(validate_access)):
     res = None
 
     try:
         # get a model
         model_dirpath = os.path.join(module_path, "models")
-        print(module_path, model_dirpath)
         model = joblib.load(f"{model_dirpath}/{comment.model}.joblib")
         pred = model.predict([comment.msg])[0]
         prediction = "Positive" if pred else "Negative"
@@ -77,7 +78,7 @@ async def infer(comment: Comment, credentials: HTTPBasicCredentials = Depends(ge
 
 
 @app.post("/train")
-async def train(params: Model, credentials: HTTPBasicCredentials = Depends(get_current_username)):
+async def train(params: Model, credentials: HTTPBasicCredentials = Depends(validate_access)):
     try:
         data = pd.read_csv(params.data_path)
     except FileNotFoundError:
@@ -119,7 +120,7 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(get_c
 
 
 @app.get("/models")
-async def get_available_models(credentials: HTTPBasicCredentials = Depends(get_current_username)):
+async def get_available_models(credentials: HTTPBasicCredentials = Depends(validate_access)):
     """
         display available models
         :return: list
@@ -139,7 +140,7 @@ async def get_available_models(credentials: HTTPBasicCredentials = Depends(get_c
 
 
 @app.get("/report")
-async def report(credentials: HTTPBasicCredentials = Depends(get_current_username)):
+async def report(credentials: HTTPBasicCredentials = Depends(validate_access)):
     """
     Get Report Board as a Pandas Dataframe converted to JSON
     :return: JSON

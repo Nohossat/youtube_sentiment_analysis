@@ -5,73 +5,22 @@ import neptune
 import pandas as pd
 import os
 
-# import api
-from preprocessing import split_data
-from scoring import compute_metrics_cv, compute_metrics
-from modeling import get_model, run_grid_search, create_pipeline
+import nohossat_cas_pratique
+from nohossat_cas_pratique.preprocessing import split_data
+from nohossat_cas_pratique.modeling import get_model, run_grid_search, create_pipeline
+from nohossat_cas_pratique.monitor import save_artifact, record_metadata, create_exp
+
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from lightgbm import LGBMClassifier
 import joblib
-import dill
-import datetime
 
-module_path = os.path.dirname(os.path.dirname(__file__))
-
-def create_exp(hyper_params, tags):
-    neptune.create_experiment(
-        name='sentiment-analysis',
-        params=hyper_params,
-        upload_source_files=['*.py', 'requirements.txt'],
-        tags=tags
-    )
-
-
-def record_metadata(X, y, model, cv=True):
-    # get metrics and log them in Neptune
-
-    fct_metrics = None
-
-    if cv:
-        fct_metrics = compute_metrics_cv
-    else:
-        fct_metrics = compute_metrics
-
-    metrics = fct_metrics(X, y, model)
-
-    for metric, value in metrics.items():
-        neptune.log_metric(metric, value)
-
-    return metrics
-
-
-def save_artifact(data_path, model_name, model_file=None):
-    neptune.log_artifact(data_path)
-
-    if model_file is None and model_name:
-        model_file = os.path.join(module_path, "models", f"{model_name}.joblib")
-
-    """
-        model_info = dict({
-            'model': model,
-            'metadata': {
-                'name': f'{estimator}_{model_name}',
-                'author': 'Nohossat TRAORE',
-                'date': datetime.datetime.now(),
-                'metrics': metrics
-            }
-        })
-    """
-
-    neptune.log_artifact(model_file)
-
-    return None
-
+module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
 
 if __name__ == "__main__":
 
     # config logging
-    logging.basicConfig(filename='../logs/monitoring.log', level=logging.DEBUG)
+    logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
 
     # parser config
     parser = argparse.ArgumentParser()
@@ -86,7 +35,7 @@ if __name__ == "__main__":
                         help="Name of the estimator to use for the modeling pipeline",
                         type=str,
                         default=None)
-    parser.add_argument("--data_path", help="data", type=str, default="../data/comments.csv")
+    parser.add_argument("--data_path", help="data", type=str, default=os.path.join(module_path, "data", "comments.csv"))
     parser.add_argument("--tags",
                         help="tags to be passed to the Neptune AI, separated by commas",
                         type=str,
@@ -129,8 +78,13 @@ if __name__ == "__main__":
     neptune.init(project_qualified_name='nohossat/youtube-sentiment-analysis')
     # ici il manque la validation sur le data path et le model path
 
-    df = pd.read_csv(data_path)
-    X, y = split_data(df)
+    try:
+        df = pd.read_csv(data_path)
+        X, y = split_data(df)
+    except FileNotFoundError:
+        print("Data path not correct")
+        raise
+
     hyper_params = None
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
@@ -164,9 +118,9 @@ if __name__ == "__main__":
 
     # compute metrics and logs data, model and metrics to Neptune.ai
     metrics = record_metadata(X_test, y_test, model, cv=cv)
-    joblib.dump(model, model_file)
 
-    if model_file:
-        save_artifact(data_path=data_path, model_file=model_file)
-    else:
-        save_artifact(data_path=data_path, model_name=model_name)
+    if not model_file:
+        model_file = os.path.join(module_path, "models", f"{model_name}.joblib")
+
+    joblib.dump(model, model_file)
+    save_artifact(data_path=data_path, model_file=model_file)

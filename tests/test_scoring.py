@@ -3,11 +3,11 @@ import os
 import pandas as pd
 import joblib
 
-import api
-from preprocessing import split_data
-from scoring import compute_metrics_cv, compute_metrics
+import nohossat_cas_pratique
+from nohossat_cas_pratique.preprocessing import split_data
+from nohossat_cas_pratique.scoring import compute_metrics_cv, compute_metrics
 
-module_path = os.path.dirname(os.path.dirname(api.__file__))
+module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
 data_path = os.path.join(module_path, "data", "comments.csv")
 model_path = os.path.join(module_path, "models", "sentiment_pipe.joblib")
 

@@ -34,7 +34,6 @@ def compute_metrics(X, y, model, random_state=0):
     _, X_test, _, y_test = train_test_split(X, y, test_size=0.2, random_state=random_state, stratify=y)
 
     scores = classification_report(model.predict(X_test), y_test, output_dict=True)
-    print(scores)
     final_scores = scores['weighted avg']
     final_scores['accuracy'] = scores['accuracy']
     return final_scores

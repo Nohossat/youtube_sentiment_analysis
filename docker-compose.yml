@@ -4,7 +4,7 @@ services:
         build:
             context: '.'
             dockerfile: './Dockerfile'
-        image : 'youtube_sentiment_api'
+        image : 'cas-pratique-1'
         volumes:
             - ./tmp:/tmp
         ports:

@@ -29,6 +29,7 @@ spacy = "*"
 nltk = "*"
 lightgbm = "*"
 psutil = "*"
+dill = "*"
 
 [dev-packages]
 

@@ -1,36 +1,40 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import pandas as pd
-import neptune
 
 import os
 import re
 import joblib
 
-from preprocessing import split_data
-from modeling import get_model
-from scoring import compute_metrics_cv
 from lightgbm import LGBMClassifier
 from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+import pandas as pd
+import neptune
+
+import api
+from preprocessing import split_data
+from modeling import get_model
 from monitoring import record_metadata
 
 app = FastAPI()
 
+module_path = os.path.dirname(os.path.dirname(api.__file__))
+
+
 class Comment(BaseModel):
     msg: str
-    model_dirpath: str = "../models"
     model: str = "sentiment_pipe"
 
 
 class Model(BaseModel):
     name: str
     estimator: str
-    data_path: str = "../data/comments.csv"
+    data_path: str = os.path.join(module_path, "data", "comments.csv")
     cv: bool = True
 
 
 class Grid(BaseModel):
-    data_path : str = "../data/comments.csv"
+    data_path : str = os.path.join(module_path, "data", "comments.csv")
     base_model_name : str = "sentiment_pipe"
     grid_model_name : str = "grid_search_api_sentiment_pipe"
     model_estimator: str = "SVC"
@@ -42,7 +46,8 @@ async def infer(comment: Comment):
 
     try:
         # get a model
-        model = joblib.load(f"{comment.model_dirpath}/{comment.model}.joblib")
+        model_dirpath = os.path.join(module_path, "models")
+        model = joblib.load(f"{model_dirpath}/{comment.model}.joblib")
         pred = model.predict([comment.msg])[0]
         prediction = "Positive" if pred else "Negative"
         res = {"prediction": prediction}
@@ -54,6 +59,23 @@ async def infer(comment: Comment):
 
 @app.post("/train")
 async def train(params: Model):
+    try:
+        data = pd.read_csv(params.data_path)
+    except FileNotFoundError:
+        return {"res": "The dataset doesn't exist"}
+
+    X, y = split_data(data)
+    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
+
+    models = {
+        "LGBM": LGBMClassifier,
+        "SVC": SVC
+    }
+
+    if params.estimator not in models.keys():
+        return {"res": f"The model isn't registered in the API. You can choose between {','.join(list(models.keys()))}"}
+
+    # start logging
     neptune.init(project_qualified_name='nohossat/youtube-sentiment-analysis')
 
     neptune.create_experiment(
@@ -63,27 +85,15 @@ async def train(params: Model):
         send_hardware_metrics=True
     )
 
-    # get data
-    data = pd.read_csv(params.data_path)
-    X, y = split_data(data)
-
-    models = {
-        "LGBM": LGBMClassifier,
-        "SVC": SVC
-    }
-
-    if params.estimator not in models.keys():
-        return {"res" : f"The model isn't registered in the API. You can choose between {list(models.keys())}"}
-
     # run model
-    model = get_model(model_estimator=models[params.estimator], data=(X, y))
+    model = get_model(model_estimator=models[params.estimator], data=(X_train, y_train))
 
     # save model
-    model_file = f"../models/{params.name}.joblib"
+    model_file = os.path.join(module_path, "models", f"{params.name}.joblib")
     joblib.dump(model, model_file)
 
     # get metrics and log them in Neptune
-    metrics = record_metadata(X, y, model, params.data_path, params.name, cv=params.cv)
+    metrics = record_metadata(X, y, model, cv=params.cv)
 
     # TODO return results by email
     return metrics
@@ -95,7 +105,7 @@ async def get_available_models():
         display available models
         :return: list
         """
-    main_folder = "../models/"
+    main_folder = os.path.join(module_path, "models")
     models = []
     for (_, _, filenames) in os.walk(main_folder):
         pattern = re.compile(r"(\w+)\.joblib")

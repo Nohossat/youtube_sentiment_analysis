@@ -3,7 +3,9 @@ import logging
 
 import neptune
 import pandas as pd
+import os
 
+import api
 from preprocessing import split_data
 from scoring import compute_metrics_cv, compute_metrics
 from modeling import get_model, run_grid_search, create_pipeline
@@ -11,7 +13,10 @@ from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from lightgbm import LGBMClassifier
 import joblib
+import dill
+import datetime
 
+module_path = os.path.dirname(os.path.dirname(api.__file__))
 
 def create_exp(hyper_params, tags):
     neptune.create_experiment(
@@ -22,7 +27,7 @@ def create_exp(hyper_params, tags):
     )
 
 
-def record_metadata(X, y, model, data_path, model_name, cv=True):
+def record_metadata(X, y, model, cv=True):
     # get metrics and log them in Neptune
 
     fct_metrics = None
@@ -37,10 +42,30 @@ def record_metadata(X, y, model, data_path, model_name, cv=True):
     for metric, value in metrics.items():
         neptune.log_metric(metric, value)
 
-    neptune.log_artifact(data_path)
-    neptune.log_artifact(f"../models/{model_name}.joblib")
-
     return metrics
+
+
+def save_artifact(data_path, model_name, model_file=None):
+    neptune.log_artifact(data_path)
+
+    if model_file is None and model_name:
+        model_file = os.path.join(module_path, "models", f"{model_name}.joblib")
+
+    """
+        model_info = dict({
+            'model': model,
+            'metadata': {
+                'name': f'{estimator}_{model_name}',
+                'author': 'Nohossat TRAORE',
+                'date': datetime.datetime.now(),
+                'metrics': metrics
+            }
+        })
+    """
+
+    neptune.log_artifact(model_file)
+
+    return None
 
 
 if __name__ == "__main__":
@@ -102,6 +127,7 @@ if __name__ == "__main__":
 
     # monitoring config
     neptune.init(project_qualified_name='nohossat/youtube-sentiment-analysis')
+    # ici il manque la validation sur le data path et le model path
 
     df = pd.read_csv(data_path)
     X, y = split_data(df)
@@ -136,22 +162,11 @@ if __name__ == "__main__":
         if model_file is None:
             model = get_model(model_estimator=estimators[estimator]['name'], data=(X_train, y_train))
 
-    model_file = f"../models/{model_name}.joblib"
+    # compute metrics and logs data, model and metrics to Neptune.ai
+    metrics = record_metadata(X_test, y_test, model, cv=cv)
     joblib.dump(model, model_file)
 
-    # compute metrics and logs data, model and metrics to Neptune.ai
-    metrics = None
-    if cv:
-        metrics = compute_metrics_cv(X_test, y_test, model)
-    else:
-        metrics = compute_metrics(X_test, y_test, model)
-
-    for metric, value in metrics.items():
-        neptune.log_metric(metric, value)
-
-    neptune.log_artifact(data_path)
-
     if model_file:
-        neptune.log_artifact(model_file)
+        save_artifact(data_path=data_path, model_file=model_file)
     else:
-        neptune.log_artifact(f"../models/{model_name}.joblib")
+        save_artifact(data_path=data_path, model_name=model_name)

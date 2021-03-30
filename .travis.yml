@@ -1,0 +1,10 @@
+language: python
+python:
+  - "3.9"
+install:
+  - pip install -r requirements.txt
+  - python3 -m spacy download fr_core_news_sm
+addons:
+  chrome: stable
+script:
+  - pytest

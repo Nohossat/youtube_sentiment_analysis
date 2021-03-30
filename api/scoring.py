@@ -18,11 +18,11 @@ def compute_metrics_cv(X, y, model):
                             cv=5,
                             scoring=('accuracy', 'precision', 'recall', 'f1_weighted', 'roc_auc'),
                             return_train_score = True)
-    final_scores = {metric : round(np.mean(metric_scores), 3) for metric, metric_scores in scores.items()}
+    final_scores = {metric: round(np.mean(metric_scores), 3) for metric, metric_scores in scores.items()}
     return final_scores
 
 
-def compute_metrics(X, y, model, random_state = 0):
+def compute_metrics(X, y, model, random_state=0):
     """
     Compute main classification metrics
     :param X: features. list

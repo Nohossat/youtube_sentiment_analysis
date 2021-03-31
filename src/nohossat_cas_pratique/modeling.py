@@ -34,7 +34,7 @@ def get_model(model_file: str = None,
                 return model
         except FileNotFoundError as e:
             logging.info(e)
-            return None
+            raise FileNotFoundError("The model doesn't exist")
 
     if data is None:
         raise ValueError("Missing data values - please provide X and y values as a tuple")

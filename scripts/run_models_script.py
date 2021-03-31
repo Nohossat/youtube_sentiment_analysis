@@ -85,7 +85,6 @@ if __name__ == "__main__":
 
     # monitoring config
     neptune.init(project_qualified_name='nohossat/youtube-sentiment-analysis')
-    # ici il manque la validation sur le data path et le model path
 
     try:
         df = pd.read_csv(data_path)
@@ -109,6 +108,7 @@ if __name__ == "__main__":
         model = estimators[estimator]["name"]
         model = create_pipeline(model_estimator=model)
 
+    # run grid search or not ?
     if grid_search:
         model_name = f"grid_search_{estimator}"
         hyper_params = estimators[estimator]["hyperparams"]

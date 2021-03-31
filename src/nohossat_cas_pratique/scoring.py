@@ -2,6 +2,7 @@ from sklearn.model_selection import cross_validate
 from sklearn.metrics import classification_report
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn import metrics
 
 
 def compute_metrics_cv(X, y, model):
@@ -36,4 +37,10 @@ def compute_metrics(X, y, model, random_state=0):
     scores = classification_report(model.predict(X_test), y_test, output_dict=True)
     final_scores = scores['weighted avg']
     final_scores['accuracy'] = scores['accuracy']
+
+    # compute auc
+    fpr, tpr, thresholds = metrics.roc_curve(y_test, model.predict(X_test), pos_label=2)
+    auc = metrics.auc(fpr, tpr)
+    final_scores['auc'] = auc
+
     return final_scores

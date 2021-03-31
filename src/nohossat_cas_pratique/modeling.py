@@ -1,16 +1,23 @@
 import joblib
 import logging
+import os
 
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 
+import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import NLPCleaner
+from nohossat_cas_pratique.logging_app import start_logging
 
 import spacy
 
 nlp = spacy.load("fr_core_news_sm")
+
+# config logging
+module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
+start_logging(module_path)
 
 
 def get_model(model_file: str = None,
@@ -33,10 +40,11 @@ def get_model(model_file: str = None,
                 model = joblib.load(f)
                 return model
         except FileNotFoundError as e:
-            logging.info(e)
+            logging.error(e)
             raise FileNotFoundError("The model doesn't exist")
 
     if data is None:
+        logging.error("Missing data values - please provide X and y values as a tuple")
         raise ValueError("Missing data values - please provide X and y values as a tuple")
 
     if model_estimator is not None:
@@ -44,9 +52,10 @@ def get_model(model_file: str = None,
             model = run_model(params=model_hyper_params, data=data, model_estimator=model_estimator)
             return model
         except Exception as e:
-            logging.info(e)
+            logging.error(e)
 
     if model_file is None and model_estimator is None:
+        logging.error("Please provide a valid model joblib or the name of a Scikit Learn Estimator")
         raise ValueError("Please provide a valid model joblib or the name of a Scikit Learn Estimator")
 
 
@@ -87,7 +96,7 @@ def run_model(params: dict = None, data: tuple = None, model_estimator: object =
     return pipe
 
 
-def run_grid_search(model: object, params: dict, data: tuple):
+def run_grid_search(model: object, params: dict, data: tuple, metrics: list, refit: str):
     """
     Run a grid search model with a dict of hyperparameters
     :param model: Scikit Learn Estimator
@@ -98,8 +107,9 @@ def run_grid_search(model: object, params: dict, data: tuple):
     """
 
     X, y = data
-    grid_model = GridSearchCV(model, params, scoring=['precision', 'recall', 'roc_auc'],
-                              refit="roc_auc", n_jobs=-1, verbose=1)
+    grid_model = GridSearchCV(model, params, scoring=metrics, refit=refit, n_jobs=-1, verbose=1)
     grid_model.fit(X, y)
 
-    return grid_model, grid_model.best_params_
+    print(grid_model.cv_results_)
+
+    return grid_model

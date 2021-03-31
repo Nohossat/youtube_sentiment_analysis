@@ -1,5 +1,5 @@
 import argparse
-import logging_app
+import logging
 
 import neptune
 import pandas as pd
@@ -9,6 +9,7 @@ import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
 from nohossat_cas_pratique.modeling import get_model, run_grid_search, create_pipeline
 from nohossat_cas_pratique.monitor import save_artifact, record_metadata, create_exp
+from nohossat_cas_pratique.scoring import compute_metrics_cv, compute_metrics, get_grid_search_best_metrics
 from nohossat_cas_pratique.logging_app import start_logging
 
 from sklearn.svm import SVC
@@ -16,11 +17,11 @@ from sklearn.model_selection import train_test_split
 from lightgbm import LGBMClassifier
 import joblib
 
-module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
 
 if __name__ == "__main__":
 
     # config logging
+    module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
     start_logging(module_path)
 
     # parser config
@@ -85,7 +86,7 @@ if __name__ == "__main__":
         print("Data path not correct")
         raise
 
-    hyper_params = None
+    hyper_params = {}
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=43, stratify=y)
 
@@ -98,10 +99,9 @@ if __name__ == "__main__":
             estimator = "SVC"
 
         model = estimators[estimator]["name"]
-        params = {}
         if estimator == "SVC":
-            params["probability"] = True
-        model = create_pipeline(model_estimator=model, params=params)
+            hyper_params["probability"] = True
+        model = create_pipeline(model_estimator=model, params=hyper_params)
 
     # run grid search or not ?
     if grid_search:
@@ -112,22 +112,33 @@ if __name__ == "__main__":
             hyper_params["clf__probability"] = [True]
 
         create_exp(hyper_params, tags)
-        logging_app.info(hyper_params)
-        model, best_params = run_grid_search(model=model, params=hyper_params, data=(X_train, y_train))
+        logging.info(hyper_params)
+        list_metrics = ['precision', 'recall', 'accuracy', 'f1_weighted', 'roc_auc']
+        refit = "roc_auc"
+        model = run_grid_search(model=model, params=hyper_params, data=(X_train, y_train), metrics=list_metrics, refit=refit)
 
         # record best params
-        for param, value in best_params.items():
+        for param, value in model.best_params_.items():
             neptune.log_text(f'best_{param}', str(value))
+
+        # here collect cv_results
+        cv_results = get_grid_search_best_metrics(model, list_metrics)
+        record_metadata(cv_results)
+
     else:
         create_exp(hyper_params, tags)
         # run solo model
         if model_file is None:
             model.fit(X_train, y_train)
 
-    if cv:
-        metrics = record_metadata(X, y, model, cv=cv)
-    else:
-        metrics = record_metadata(X_test, y_test, model, cv=cv)
+        # run CV to see about over-fitting
+        if cv:
+            metrics_cv = compute_metrics_cv(X_train, y_train, model)
+            record_metadata(metrics_cv)
+
+    # compute metrics on test dataset
+    metrics = compute_metrics(X_test, y_test, model)
+    record_metadata(metrics)
 
     if not model_file:
         model_file = os.path.join(module_path, "models", f"{model_name}.joblib")

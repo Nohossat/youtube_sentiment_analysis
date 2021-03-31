@@ -21,7 +21,7 @@ def test_train():
                                  "cv": False})
 
     assert response.status_code == 200
-    assert round(response.json()['accuracy'], 3) == 0.857
+    assert round(response.json()['accuracy'], 3) == 1.0
 
 
 def test_train_false_model():

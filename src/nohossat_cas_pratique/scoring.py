@@ -3,6 +3,28 @@ from sklearn.metrics import classification_report, roc_auc_score
 import numpy as np
 from sklearn.model_selection import train_test_split
 import logging
+import os
+
+import nohossat_cas_pratique
+from nohossat_cas_pratique.logging_app import start_logging
+
+# config logging
+module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
+start_logging(module_path)
+
+def get_grid_search_best_metrics(model, metrics):
+    scores = {}
+
+    for metric in metrics:
+        means_test = model.cv_results_[f'mean_test_{metric}']
+        stds_test = model.cv_results_[f'std_test_{metric}']
+
+        for mean, std, params in zip(means_test, stds_test, model.cv_results_['params']):
+            if params == model.best_params_:
+                scores[f'mean_test_{metric}'] = mean
+                scores[f'std_test_{metric}'] = std
+
+    return scores
 
 
 def compute_metrics_cv(X, y, model):
@@ -19,7 +41,9 @@ def compute_metrics_cv(X, y, model):
                             cv=5,
                             scoring=('accuracy', 'precision', 'recall', 'f1_weighted', 'roc_auc'),
                             return_train_score = True)
-    final_scores = {metric: round(np.mean(metric_scores), 3) for metric, metric_scores in scores.items()}
+    final_scores = {f"mean_{metric}": round(np.mean(metric_scores), 3) for metric, metric_scores in scores.items()}
+    std_final_scores = {f"std_{metric}": round(np.std(metric_scores), 3) for metric, metric_scores in scores.items()}
+    final_scores = {**final_scores, **std_final_scores}
     return final_scores
 
 
@@ -44,7 +68,7 @@ def compute_metrics(X, y, model, random_state=0):
         auc = roc_auc_score(y_test, probas[:, 1])
         final_scores['auc'] = auc
     except AttributeError as e:
-        logging.info(e)
+        logging.error(e)
         raise AttributeError("The probability param must be set before fitting model")
 
     return final_scores

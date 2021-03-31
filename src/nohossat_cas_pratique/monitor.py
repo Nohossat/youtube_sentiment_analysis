@@ -1,7 +1,5 @@
 import neptune
 
-from nohossat_cas_pratique.scoring import compute_metrics_cv, compute_metrics
-
 
 def create_exp(hyper_params, tags):
     neptune.create_experiment(
@@ -12,18 +10,8 @@ def create_exp(hyper_params, tags):
     )
 
 
-def record_metadata(X, y, model, cv=True):
-    # get metrics and log them in Neptune
-
-    fct_metrics = None
-
-    if cv:
-        fct_metrics = compute_metrics_cv
-    else:
-        fct_metrics = compute_metrics
-
-    metrics = fct_metrics(X, y, model)
-
+def record_metadata(metrics):
+    # log them in Neptune
     for metric, value in metrics.items():
         neptune.log_metric(metric, value)
 

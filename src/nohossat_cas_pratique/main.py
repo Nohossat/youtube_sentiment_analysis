@@ -6,6 +6,7 @@ import os
 import re
 import joblib
 import secrets
+import logging
 
 from lightgbm import LGBMClassifier
 from sklearn.svm import SVC
@@ -15,9 +16,10 @@ import neptune
 
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
-from nohossat_cas_pratique.modeling import get_model, create_pipeline
+from nohossat_cas_pratique.modeling import create_pipeline
 from nohossat_cas_pratique.monitor import record_metadata
 from nohossat_cas_pratique.logging_app import start_logging
+from nohossat_cas_pratique.scoring import compute_metrics
 
 app = FastAPI()
 security = HTTPBasic()
@@ -51,6 +53,7 @@ def validate_access(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, os.getenv('LOGIN'))
     correct_password = secrets.compare_digest(credentials.password, os.getenv('PASSWORD'))
     if not (correct_username and correct_password):
+        logging.error("Incorrect username or password")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -71,6 +74,7 @@ async def infer(comment: Comment, credentials: HTTPBasicCredentials = Depends(va
         prediction = "Positive" if pred else "Negative"
         res = {"prediction": prediction}
     except FileNotFoundError as e:
+        logging.error(e)
         res = {"result": f"The model doesn't exist: {e}"}
 
     return res
@@ -80,7 +84,8 @@ async def infer(comment: Comment, credentials: HTTPBasicCredentials = Depends(va
 async def train(params: Model, credentials: HTTPBasicCredentials = Depends(validate_access)):
     try:
         data = pd.read_csv(params.data_path)
-    except FileNotFoundError:
+    except FileNotFoundError as e:
+        logging.error(e)
         return {"res": "The dataset doesn't exist"}
 
     X, y = split_data(data)
@@ -105,8 +110,6 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
     )
 
     # run model
-    # model = get_model(model_estimator=models[params.estimator], data=(X_train, y_train))
-
     hyper_params = {}
     if params.estimator == "SVC":
         hyper_params["probability"] = True
@@ -118,7 +121,8 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
     joblib.dump(model, model_file)
 
     # get metrics and log them in Neptune
-    metrics = record_metadata(X, y, model, cv=params.cv)
+    metrics = compute_metrics(X_train, y_train, model)
+    record_metadata(metrics)
 
     # TODO return results by email
     return metrics

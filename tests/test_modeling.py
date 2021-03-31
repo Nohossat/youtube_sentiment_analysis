@@ -103,14 +103,17 @@ def test_run_grid_search():
         "clf__random_state": [43]}
 
     pipe = create_pipeline(model_estimator=LGBMClassifier)
+    list_metrics = ['precision', 'recall']
+    refit = "precision"
 
-    grid_pipe = run_grid_search(model=pipe, params=params, data=(X, y))
+    grid_pipe = run_grid_search(model=pipe, params=params, data=(X, y), metrics=list_metrics, refit=refit)
+    print(grid_pipe)
 
-    assert isinstance(grid_pipe[0], GridSearchCV), "Should be a grid search"
-    assert isinstance(grid_pipe[0].estimator, Pipeline)
-    assert grid_pipe[0].param_grid == {'clf__class_weight': ['balanced'],
+    assert isinstance(grid_pipe, GridSearchCV), "Should be a grid search"
+    assert isinstance(grid_pipe.estimator, Pipeline)
+    assert grid_pipe.param_grid == {'clf__class_weight': ['balanced'],
                                     'clf__max_depth': [3],
                                     'clf__n_estimators': [50],
                                     'clf__random_state': [43]}
 
-    assert grid_pipe[0].refit == 'roc_auc'
+    assert grid_pipe.refit == 'precision'

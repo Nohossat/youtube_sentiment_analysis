@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.8
 
 RUN /usr/local/bin/python -m pip install --upgrade pip
 RUN mkdir /api
@@ -18,6 +18,7 @@ COPY models/sentiment_pipe.joblib ./models
 COPY src ./src
 COPY requirements.txt .
 
+RUN pip install --upgrade pip setuptools wheel
 RUN pip install -r requirements.txt
 RUN python -m pip install -e .
 
@@ -25,4 +26,4 @@ EXPOSE 8000
 
 WORKDIR /api/src/nohossat_cas_pratique
 
-CMD "uvicorn" "main:app" "--host" "0.0.0.0" "--port" "8000"
+CMD "uvicorn" "main:app" "--host" "0.0.0.0" "--port" $PORT

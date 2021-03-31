@@ -12,6 +12,7 @@ before_install:
   - docker login --username=$HEROKU_LOGIN --password=$HEROKU_API_KEY registry.heroku.com
 
 install:
+  - pip install --upgrade pip setuptools wheel
   - pip install -r requirements.txt
   - python3 -m spacy download fr_core_news_sm
   - python -m pip install -e .

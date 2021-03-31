@@ -16,6 +16,7 @@ cffi==1.14.5
 cfgv==3.2.0
 chardet==4.0.0
 click==7.1.2
+coverage==5.5
 cycler==0.10.0
 cymem==2.0.5
 decorator==4.4.2
@@ -36,7 +37,7 @@ h11==0.12.0
 identify==2.2.2
 idna==2.10
 iniconfig==1.1.1
-ipykernel==5.5.0
+ipykernel==5.5.3
 ipython==7.22.0
 ipython-genutils==0.2.0
 itsdangerous==1.1.0
@@ -53,7 +54,7 @@ jupyter-packaging==0.7.12
 jupyter-server==1.5.1
 jupyterlab==3.0.12
 jupyterlab-pygments==0.1.2
-jupyterlab-server==2.3.0
+jupyterlab-server==2.4.0
 kiwisolver==1.3.1
 lightgbm==3.2.0
 MarkupSafe==1.1.1
@@ -72,14 +73,14 @@ neptune-client==0.9.0
 nest-asyncio==1.5.1
 nltk==3.5
 nodeenv==1.5.0
--e git+https://github.com/Nohossat/youtube_sentiment_analysis.git@2a9abe6fb9cc9b2e73f86a27b660a488c1b252e9#egg=nohossat_cas_pratique
+-e git+https://github.com/Nohossat/youtube_sentiment_analysis.git@4dad1cfca368e2bb03b6e8bcc8965f82e017fe44#egg=nohossat_cas_pratique
 notebook==6.3.0
 numpy==1.20.2
 oauthlib==3.1.0
 packaging==20.9
 pandas==1.2.3
 pandocfilters==1.4.3
-parso==0.8.1
+parso==0.8.2
 pathy==0.4.0
 pexpect==4.8.0
 pickleshare==0.7.5
@@ -101,6 +102,7 @@ PyJWT==2.0.1
 pyparsing==2.4.7
 pyrsistent==0.17.3
 pytest==5.4.3
+pytest-cov==2.11.1
 python-dateutil==2.8.1
 pytz==2021.1
 PyYAML==5.4.1

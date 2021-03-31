@@ -1,8 +1,8 @@
 from sklearn.model_selection import cross_validate
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, roc_auc_score
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn import metrics
+import logging
 
 
 def compute_metrics_cv(X, y, model):
@@ -39,8 +39,12 @@ def compute_metrics(X, y, model, random_state=0):
     final_scores['accuracy'] = scores['accuracy']
 
     # compute auc
-    fpr, tpr, thresholds = metrics.roc_curve(y_test, model.predict(X_test), pos_label=2)
-    auc = metrics.auc(fpr, tpr)
-    final_scores['auc'] = auc
+    try:
+        probas = model.predict_proba(X_test)
+        auc = roc_auc_score(y_test, probas[:, 1])
+        final_scores['auc'] = auc
+    except AttributeError as e:
+        logging.info(e)
+        raise AttributeError("The probability param must be set before fitting model")
 
     return final_scores

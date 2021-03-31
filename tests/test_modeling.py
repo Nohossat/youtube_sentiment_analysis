@@ -36,8 +36,8 @@ def test_get_model_model_file():
 
 def test_get_model_fake_model_file():
     fake_model_path = '../models/test_model.joblib'
-    model = get_model(model_file=fake_model_path)
-    assert model == None
+    with pytest.raises(FileNotFoundError, match="The model doesn't exist"):
+        get_model(model_file=fake_model_path)
 
 
 def test_get_model_none_data():

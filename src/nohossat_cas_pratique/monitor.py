@@ -1,10 +1,6 @@
 import neptune
-import os
 
-import nohossat_cas_pratique
 from nohossat_cas_pratique.scoring import compute_metrics_cv, compute_metrics
-
-module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
 
 
 def create_exp(hyper_params, tags):

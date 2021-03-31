@@ -6,7 +6,6 @@ import os
 import re
 import joblib
 import secrets
-import logging
 
 from lightgbm import LGBMClassifier
 from sklearn.svm import SVC
@@ -16,25 +15,16 @@ import neptune
 
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
-from nohossat_cas_pratique.modeling import get_model
-from scripts.run_models_script import record_metadata
+from nohossat_cas_pratique.modeling import get_model, create_pipeline
+from nohossat_cas_pratique.monitor import record_metadata
+from nohossat_cas_pratique.logging_app import start_logging
 
 app = FastAPI()
 security = HTTPBasic()
 
 # config logging
 module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
-
-try:
-    logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
-except FileNotFoundError:
-    logs_folder = os.path.join(module_path, "logs")
-    filename = os.path.join(logs_folder, "monitoring.log")
-    os.mkdir(logs_folder)
-    with open(filename, "w") as f:
-        f.write("")
-
-    logging.basicConfig(filename=filename, level=logging.DEBUG)
+start_logging(module_path)
 
 
 class Comment(BaseModel):
@@ -115,7 +105,13 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
     )
 
     # run model
-    model = get_model(model_estimator=models[params.estimator], data=(X_train, y_train))
+    # model = get_model(model_estimator=models[params.estimator], data=(X_train, y_train))
+
+    hyper_params = {}
+    if params.estimator == "SVC":
+        hyper_params["probability"] = True
+    model = create_pipeline(model_estimator=models[params.estimator], params=hyper_params)
+    model.fit(X_train, y_train)
 
     # save model
     model_file = os.path.join(module_path, "models", f"{params.name}.joblib")

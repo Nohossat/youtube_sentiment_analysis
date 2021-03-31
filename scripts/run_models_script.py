@@ -1,5 +1,5 @@
 import argparse
-import logging
+import logging_app
 
 import neptune
 import pandas as pd
@@ -9,6 +9,7 @@ import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
 from nohossat_cas_pratique.modeling import get_model, run_grid_search, create_pipeline
 from nohossat_cas_pratique.monitor import save_artifact, record_metadata, create_exp
+from nohossat_cas_pratique.logging_app import start_logging
 
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
@@ -20,16 +21,7 @@ module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_prati
 if __name__ == "__main__":
 
     # config logging
-    try:
-        logging.basicConfig(filename=os.path.join(module_path, "logs", "monitoring.log"), level=logging.DEBUG)
-    except FileNotFoundError:
-        logs_folder = os.path.join(module_path, "logs")
-        filename = os.path.join(logs_folder, "monitoring.log")
-        os.mkdir(logs_folder)
-        with open(filename, "w") as f:
-            f.write("")
-
-        logging.basicConfig(filename=filename, level=logging.DEBUG)
+    start_logging(module_path)
 
     # parser config
     parser = argparse.ArgumentParser()
@@ -95,7 +87,7 @@ if __name__ == "__main__":
 
     hyper_params = None
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=43, stratify=y)
 
     # get model
     if model_file:
@@ -106,14 +98,21 @@ if __name__ == "__main__":
             estimator = "SVC"
 
         model = estimators[estimator]["name"]
-        model = create_pipeline(model_estimator=model)
+        params = {}
+        if estimator == "SVC":
+            params["probability"] = True
+        model = create_pipeline(model_estimator=model, params=params)
 
     # run grid search or not ?
     if grid_search:
         model_name = f"grid_search_{estimator}"
         hyper_params = estimators[estimator]["hyperparams"]
+
+        if estimator == "SVC":
+            hyper_params["clf__probability"] = [True]
+
         create_exp(hyper_params, tags)
-        logging.info(hyper_params)
+        logging_app.info(hyper_params)
         model, best_params = run_grid_search(model=model, params=hyper_params, data=(X_train, y_train))
 
         # record best params
@@ -121,12 +120,14 @@ if __name__ == "__main__":
             neptune.log_text(f'best_{param}', str(value))
     else:
         create_exp(hyper_params, tags)
-
+        # run solo model
         if model_file is None:
-            model = get_model(model_estimator=estimators[estimator]['name'], data=(X_train, y_train))
+            model.fit(X_train, y_train)
 
-    # compute metrics and logs data, model and metrics to Neptune.ai
-    metrics = record_metadata(X_test, y_test, model, cv=cv)
+    if cv:
+        metrics = record_metadata(X, y, model, cv=cv)
+    else:
+        metrics = record_metadata(X_test, y_test, model, cv=cv)
 
     if not model_file:
         model_file = os.path.join(module_path, "models", f"{model_name}.joblib")

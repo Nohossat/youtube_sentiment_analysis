@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 import joblib
+import pytest
 
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
@@ -23,12 +24,23 @@ def test_compute_metrics_cv():
         assert round(scores['test_accuracy'], 3) == 0.865
 
 
-def test_compute_metrics():
+def test_compute_metrics_no_prob():
     data = pd.read_csv(data_path)
     X, y = split_data(data)
 
     with open(model_path, "rb") as f:
         model = joblib.load(f)
-        scores = compute_metrics(X, y, model)
+        with pytest.raises(AttributeError, match="The probability param must be set before fitting model"):
+            compute_metrics(X, y, model)
 
-        assert round(scores['accuracy'], 3) == 0.717
+
+def test_compute_metrics():
+    data = pd.read_csv(data_path)
+    X, y = split_data(data)
+
+    model_path = os.path.join(module_path, "models", "SVC_solo.joblib")
+
+    with open(model_path, "rb") as f:
+        model = joblib.load(f)
+        scores = compute_metrics(X, y, model)
+        assert round(scores['accuracy'], 3) == 0.958

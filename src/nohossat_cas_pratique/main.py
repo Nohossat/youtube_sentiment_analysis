@@ -12,12 +12,11 @@ from lightgbm import LGBMClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 import pandas as pd
-import neptune
 
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
 from nohossat_cas_pratique.modeling import create_pipeline
-from nohossat_cas_pratique.monitor import record_metadata
+from nohossat_cas_pratique.monitor import record_metadata, activate_monitoring, create_exp, save_artifact
 from nohossat_cas_pratique.logging_app import start_logging
 from nohossat_cas_pratique.scoring import compute_metrics
 
@@ -39,6 +38,7 @@ class Model(BaseModel):
     estimator: str
     data_path: str = os.path.join(module_path, "data", "comments.csv")
     cv: bool = True
+    neptune_log: bool = True
 
 
 class Grid(BaseModel):
@@ -100,14 +100,11 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
         return {"res": f"The model isn't registered in the API. You can choose between {','.join(list(models.keys()))}"}
 
     # start logging
-    neptune.init(project_qualified_name='nohossat/youtube-sentiment-analysis')
+    if params.neptune_log:
+        activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+        tags = [params.estimator, "solo"]
 
-    neptune.create_experiment(
-        name='sentiment-analysis',
-        upload_source_files=['*.py', 'requirements.txt'],
-        tags=[params.estimator, "solo"],
-        send_hardware_metrics=True
-    )
+        create_exp(None, tags)
 
     # run model
     hyper_params = {}
@@ -122,7 +119,10 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
 
     # get metrics and log them in Neptune
     metrics = compute_metrics(X_train, y_train, model)
-    record_metadata(metrics)
+
+    if params.neptune_log:
+        record_metadata(metrics)
+        save_artifact(data_path=params.data_path, model_file=model_file)
 
     # TODO return results by email
     return metrics
@@ -154,7 +154,7 @@ async def report(credentials: HTTPBasicCredentials = Depends(validate_access)):
     Get Report Board as a Pandas Dataframe converted to JSON
     :return: JSON
     """
-    project = neptune.init('nohossat/youtube-sentiment-analysis')
+    project = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
 
     data = project.get_leaderboard()
     result = data.to_json(orient="split")

@@ -8,6 +8,8 @@ RUN mkdir /api/models
 
 ENV LOGIN=user
 ENV PASSWORD=pass
+ENV NEPTUNE_USER=nohossat
+ENV NEPTUNE_PROJECT=youtube-sentiment-analysis
 
 WORKDIR /api
 

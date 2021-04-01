@@ -8,7 +8,7 @@ import os
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
 from nohossat_cas_pratique.modeling import get_model, run_grid_search, create_pipeline
-from nohossat_cas_pratique.monitor import save_artifact, record_metadata, create_exp
+from nohossat_cas_pratique.monitor import save_artifact, record_metadata, create_exp, activate_monitoring
 from nohossat_cas_pratique.scoring import compute_metrics_cv, compute_metrics, get_grid_search_best_metrics
 from nohossat_cas_pratique.logging_app import start_logging
 
@@ -19,10 +19,7 @@ import joblib
 
 
 if __name__ == "__main__":
-
-    # config logging
     module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
-    start_logging(module_path)
 
     # parser config
     parser = argparse.ArgumentParser()
@@ -50,6 +47,10 @@ if __name__ == "__main__":
                         help="should we cross-validate ?",
                         type=bool,
                         default=False)
+    parser.add_argument("--monitor",
+                        help="should we monitor in Neptune.ai ?",
+                        type=bool,
+                        default=False)
     args = parser.parse_args()
     model_file = args.model_file
     model_name = args.model_name
@@ -58,6 +59,7 @@ if __name__ == "__main__":
     grid_search = args.grid_search
     estimator = args.estimator
     cv = args.cv
+    monitor = args.monitor
 
     estimators = {
         "LGBM": {"name": LGBMClassifier,
@@ -73,11 +75,14 @@ if __name__ == "__main__":
                                 'clf__gamma': [0.001, "scale", "auto"]}}
     }
 
-    if tags:
-        tags = args.tags.split(",")
+    # config logging
+    start_logging(module_path)
 
-    # monitoring config
-    neptune.init(project_qualified_name='nohossat/youtube-sentiment-analysis')
+    # monitoring ?
+    if monitor:
+        activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+        if tags:
+            tags = args.tags.split(",")
 
     try:
         df = pd.read_csv(data_path)
@@ -103,7 +108,6 @@ if __name__ == "__main__":
             hyper_params["probability"] = True
         model = create_pipeline(model_estimator=model, params=hyper_params)
 
-    # run grid search or not ?
     if grid_search:
         model_name = f"grid_search_{estimator}"
         hyper_params = estimators[estimator]["hyperparams"]
@@ -111,8 +115,10 @@ if __name__ == "__main__":
         if estimator == "SVC":
             hyper_params["clf__probability"] = [True]
 
-        create_exp(hyper_params, tags)
-        logging.info(hyper_params)
+        if monitor:
+            create_exp(hyper_params, tags)
+
+        # run model
         list_metrics = ['precision', 'recall', 'accuracy', 'f1_weighted', 'roc_auc']
         refit = "roc_auc"
         model = run_grid_search(model=model, params=hyper_params, data=(X_train, y_train), metrics=list_metrics, refit=refit)
@@ -121,12 +127,15 @@ if __name__ == "__main__":
         for param, value in model.best_params_.items():
             neptune.log_text(f'best_{param}', str(value))
 
-        # here collect cv_results
+        # collect cv_results
         cv_results = get_grid_search_best_metrics(model, list_metrics)
-        record_metadata(cv_results)
+        if monitor:
+            record_metadata(cv_results)
 
     else:
-        create_exp(hyper_params, tags)
+        if monitor:
+            create_exp(hyper_params, tags)
+
         # run solo model
         if model_file is None:
             model.fit(X_train, y_train)
@@ -134,14 +143,18 @@ if __name__ == "__main__":
         # run CV to see about over-fitting
         if cv:
             metrics_cv = compute_metrics_cv(X_train, y_train, model)
-            record_metadata(metrics_cv)
+            if monitor:
+                record_metadata(metrics_cv)
 
     # compute metrics on test dataset
     metrics = compute_metrics(X_test, y_test, model)
-    record_metadata(metrics)
+    if monitor:
+        record_metadata(metrics)
 
+    # save model
     if not model_file:
         model_file = os.path.join(module_path, "models", f"{model_name}.joblib")
 
     joblib.dump(model, model_file)
-    save_artifact(data_path=data_path, model_file=model_file)
+    if monitor:
+        save_artifact(data_path=data_path, model_file=model_file)

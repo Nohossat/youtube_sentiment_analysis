@@ -1,12 +1,17 @@
 import neptune
 
 
+def activate_monitoring(user, project):
+    return neptune.init(project_qualified_name=f'{user}/{project}')
+
+
 def create_exp(hyper_params, tags):
     neptune.create_experiment(
         name='sentiment-analysis',
         params=hyper_params,
         upload_source_files=['*.py', 'requirements.txt'],
-        tags=tags
+        tags=tags,
+        send_hardware_metrics=True
     )
 
 
@@ -20,16 +25,5 @@ def record_metadata(metrics):
 
 def save_artifact(data_path, model_file):
     neptune.log_artifact(data_path)
-    """
-        model_info = dict({
-            'model': model,
-            'metadata': {
-                'name': f'{estimator}_{model_name}',
-                'author': 'Nohossat TRAORE',
-                'date': datetime.datetime.now(),
-                'metrics': metrics
-            }
-        })
-    """
     neptune.log_artifact(model_file)
     return None

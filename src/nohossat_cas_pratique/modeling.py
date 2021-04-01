@@ -59,7 +59,7 @@ def get_model(model_file: str = None,
         raise ValueError("Please provide a valid model joblib or the name of a Scikit Learn Estimator")
 
 
-def create_pipeline(params: dict = None, model_estimator: object = SVC):
+def create_pipeline(params: dict = None, model_estimator: callable = SVC):
     if params is None:
         params = {}
 
@@ -70,7 +70,7 @@ def create_pipeline(params: dict = None, model_estimator: object = SVC):
     return pipe
 
 
-def run_model(params: dict = None, data: tuple = None, model_estimator: object = SVC):
+def run_model(params: dict = None, data: tuple = None, model_estimator: callable = SVC):
     """
     Run a TF-IDF + SVC pipeline with pre-defined hyper parameters
     :param params: Hyperparameters to the SVC estimator

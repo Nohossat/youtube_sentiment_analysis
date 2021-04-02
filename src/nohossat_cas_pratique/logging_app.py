@@ -14,7 +14,7 @@ def start_logging(module_path):
         logs_folder = os.path.join(module_path, "logs")
         filename = os.path.join(logs_folder, "monitoring.log")
 
-        if not os.exists(filename):
+        if not os.path.exists(filename):
             os.mkdir(logs_folder)
             with open(filename, "w") as f:
                 f.write("")

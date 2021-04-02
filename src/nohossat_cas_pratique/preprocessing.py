@@ -12,7 +12,7 @@ def split_data(data):
     """
     split dataset between features and label
     :param data: Pandas DataFrame
-    :return:
+    :return: a tuple with features and label values
     """
     target = "sentiment"
     X = data.drop(target, axis = 1)
@@ -23,6 +23,9 @@ def split_data(data):
 
 
 class NLPCleaner(BaseEstimator, TransformerMixin):
+    """
+    Scikit Learn transformer class. Useful to preprocess text before applying an algorithm
+    """
     def __init__(self):
         super().__init__()
 

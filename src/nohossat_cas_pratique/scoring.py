@@ -47,7 +47,7 @@ def compute_metrics_cv(X, y, model):
     return final_scores
 
 
-def compute_metrics(X, y, model, random_state=0):
+def compute_metrics(X, y, model, dataset="test"):
     """
     Compute main classification metrics
     :param X: features. list
@@ -56,16 +56,15 @@ def compute_metrics(X, y, model, random_state=0):
     :return: a dictionary with classification metrics
     """
 
-    _, X_test, _, y_test = train_test_split(X, y, test_size=0.2, random_state=random_state, stratify=y)
-
-    scores = classification_report(model.predict(X_test), y_test, output_dict=True)
+    scores = classification_report(model.predict(X), y, output_dict=True)
     final_scores = scores['weighted avg']
     final_scores['accuracy'] = scores['accuracy']
+    final_scores = {f"{dataset}/{metric}": value for metric, value in final_scores.items() if metric != "support"}
 
     # compute auc
     try:
-        probas = model.predict_proba(X_test)
-        auc = roc_auc_score(y_test, probas[:, 1])
+        probas = model.predict_proba(X)
+        auc = roc_auc_score(y, probas[:, 1])
         final_scores['auc'] = auc
     except AttributeError as e:
         logging.error(e)

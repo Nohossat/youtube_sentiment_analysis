@@ -1,11 +1,16 @@
-import neptune
+import neptune.new as neptune
 
 
 def activate_monitoring(user, project):
-    return neptune.init(project_qualified_name=f'{user}/{project}')
+    return neptune.init(project=f'{user}/{project}',
+                        source_files=['*.py', 'requirements.txt'])
 
 
-def create_exp(hyper_params, tags):
+def create_exp(hyper_params, tags, run):
+    run['parameters'] = hyper_params
+    run['sys/tags'].add(tags)
+
+    """
     neptune.create_experiment(
         name='sentiment-analysis',
         params=hyper_params,
@@ -13,17 +18,19 @@ def create_exp(hyper_params, tags):
         tags=tags,
         send_hardware_metrics=True
     )
+    """
+    return None
 
 
-def record_metadata(metrics):
+def record_metadata(metrics, run):
     # log them in Neptune
     for metric, value in metrics.items():
-        neptune.log_metric(metric, value)
+        run[metric] = value
 
-    return metrics
+    return None
 
 
-def save_artifact(data_path, model_file):
-    neptune.log_artifact(data_path)
-    neptune.log_artifact(model_file)
+def save_artifact(data_path, model_file, run):
+    run["model"].upload(model_file)
+    run["dataset"].upload(data_path)
     return None

@@ -77,10 +77,11 @@ if __name__ == "__main__":
 
     # config logging
     start_logging(module_path)
+    run = None
 
     # monitoring ?
     if monitor:
-        activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+        run = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
         if tags:
             tags = args.tags.split(",")
 
@@ -115,8 +116,8 @@ if __name__ == "__main__":
         if estimator == "SVC":
             hyper_params["clf__probability"] = [True]
 
-        if monitor:
-            create_exp(hyper_params, tags)
+        if run is not None:
+            create_exp(hyper_params, tags, run)
 
         # run model
         list_metrics = ['precision', 'recall', 'accuracy', 'f1_weighted', 'roc_auc']
@@ -124,37 +125,35 @@ if __name__ == "__main__":
         model = run_grid_search(model=model, params=hyper_params, data=(X_train, y_train), metrics=list_metrics, refit=refit)
 
         # record best params
-        for param, value in model.best_params_.items():
-            neptune.log_text(f'best_{param}', str(value))
+        run['best_params'] = model.best_params_
 
         # collect cv_results
         cv_results = get_grid_search_best_metrics(model, list_metrics)
-        if monitor:
-            record_metadata(cv_results)
+        if run is not None:
+            record_metadata(cv_results, run)
 
     else:
-        if monitor:
-            create_exp(hyper_params, tags)
+        if run is not None:
+            create_exp(hyper_params, tags, run)
 
         # run solo model
         if model_file is None:
             model.fit(X_train, y_train)
 
-        # run CV to see about over-fitting
+        # run CV to get robust results
         if cv:
             metrics_cv = compute_metrics_cv(X_train, y_train, model)
-            if monitor:
-                record_metadata(metrics_cv)
+            if run is not None:
+                record_metadata(metrics_cv, run)
 
     # compute metrics on test dataset
     metrics = compute_metrics(X_test, y_test, model)
-    if monitor:
-        record_metadata(metrics)
 
-    # save model
     if not model_file:
         model_file = os.path.join(module_path, "models", f"{model_name}.joblib")
-
     joblib.dump(model, model_file)
-    if monitor:
-        save_artifact(data_path=data_path, model_file=model_file)
+
+    # save model and dataset
+    if run is not None:
+        record_metadata(metrics, run)
+        save_artifact(data_path=data_path, model_file=model_file, run=run)

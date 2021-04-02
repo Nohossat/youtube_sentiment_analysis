@@ -2,6 +2,7 @@ anyio==2.2.0
 appdirs==1.4.4
 appnope==0.1.2
 argon2-cffi==20.1.0
+astroid==2.5.2
 async-generator==1.10
 attrs==20.3.0
 Babel==2.9.0
@@ -40,6 +41,7 @@ iniconfig==1.1.1
 ipykernel==5.5.3
 ipython==7.22.0
 ipython-genutils==0.2.0
+isort==5.8.0
 itsdangerous==1.1.0
 jedi==0.18.0
 Jinja2==2.11.2
@@ -56,6 +58,7 @@ jupyterlab==3.0.12
 jupyterlab-pygments==0.1.2
 jupyterlab-server==2.4.0
 kiwisolver==1.3.1
+lazy-object-proxy==1.6.0
 lightgbm==3.2.0
 MarkupSafe==1.1.1
 matplotlib==3.4.0
@@ -73,7 +76,7 @@ neptune-client==0.9.0
 nest-asyncio==1.5.1
 nltk==3.5
 nodeenv==1.5.0
--e git+https://github.com/Nohossat/youtube_sentiment_analysis.git@4dad1cfca368e2bb03b6e8bcc8965f82e017fe44#egg=nohossat_cas_pratique
+-e git+https://github.com/Nohossat/youtube_sentiment_analysis.git@23f91537823d913f4fe670225dec825a1b4551b4#egg=nohossat_cas_pratique
 notebook==6.3.0
 numpy==1.20.2
 oauthlib==3.1.0
@@ -99,6 +102,7 @@ pydantic==1.7.3
 pyflakes==2.2.0
 Pygments==2.8.1
 PyJWT==2.0.1
+pylint==2.7.4
 pyparsing==2.4.7
 pyrsistent==0.17.3
 pytest==5.4.3
@@ -148,3 +152,4 @@ webcolors==1.11.1
 webencodings==0.5.1
 websocket-client==0.58.0
 Werkzeug==1.0.1
+wrapt==1.12.1

@@ -43,4 +43,4 @@ def test_compute_metrics():
     with open(model_path, "rb") as f:
         model = joblib.load(f)
         scores = compute_metrics(X, y, model)
-        assert round(scores['accuracy'], 3) == 0.958
+        assert round(scores['test/accuracy'], 3) == 0.967

@@ -100,11 +100,12 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
         return {"res": f"The model isn't registered in the API. You can choose between {','.join(list(models.keys()))}"}
 
     # start logging
+    run = None
     if params.neptune_log:
-        activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+        run = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
         tags = [params.estimator, "solo"]
 
-        create_exp(None, tags)
+        create_exp(None, tags, run)
 
     # run model
     hyper_params = {}
@@ -120,9 +121,9 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
     # get metrics and log them in Neptune
     metrics = compute_metrics(X_train, y_train, model)
 
-    if params.neptune_log:
-        record_metadata(metrics)
-        save_artifact(data_path=params.data_path, model_file=model_file)
+    if run is not None:
+        record_metadata(metrics, run)
+        save_artifact(data_path=params.data_path, model_file=model_file, run=run)
 
     # TODO return results by email
     return metrics

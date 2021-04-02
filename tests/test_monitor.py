@@ -2,7 +2,7 @@ import os
 
 import joblib
 import pandas as pd
-import neptune
+import neptune.new as neptune
 
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
@@ -16,35 +16,40 @@ model_path = os.path.join(module_path, "models", "sentiment_pipe.joblib")
 
 def test_activate_monitoring():
     project = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
-    assert isinstance(project, neptune.projects.Project), "This object should be an instance of Project"
+    assert isinstance(project, neptune.run.Run), "This object should be an instance of Run"
 
 
 def test_create_exp():
-    activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+    run = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+    run["name"] = "test_create_exp"
     hyper_params = {"C": [10, 50]}
     tags = ["test"]
-    exp = create_exp(hyper_params, tags)
+    exp = create_exp(hyper_params, tags, run)
 
     assert exp == None
 
 
 def test_record_metadata():
     model_path = os.path.join(module_path, "models", "SVC_solo.joblib")
+    run = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+    run["name"] = "test_record_metadata"
+    run['sys/tags'].add(["test", "pytest"])
 
     with open(model_path, "rb") as f:
         model = joblib.load(f)
         data = pd.read_csv(data_path)
         X, y = split_data(data)
         metrics = compute_metrics(X, y, model)
-        new_metrics = record_metadata(metrics)
-        assert metrics == new_metrics
+        recording = record_metadata(metrics, run)
+        assert recording == None
 
 
 def test_save_artifact():
-    activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+    run = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+    run["name"] = "test_save_artifact"
     hyper_params = {"C": [10, 50]}
     tags = ["test"]
-    create_exp(hyper_params, tags)
-    res = save_artifact(data_path, model_path)
+    create_exp(hyper_params, tags, run)
+    res = save_artifact(data_path, model_path, run)
 
     assert res == None

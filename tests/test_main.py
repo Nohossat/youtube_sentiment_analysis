@@ -24,7 +24,7 @@ def test_train():
                                  "neptune_log": False})
 
     assert response.status_code == 200
-    assert round(response.json()['accuracy'], 3) == 1.0
+    assert round(response.json()['test/accuracy'], 3) == 0.999
 
 
 def test_train_false_model():

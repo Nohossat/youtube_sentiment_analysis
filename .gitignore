@@ -10,3 +10,4 @@ models/
 Pipfile.lock
 src/nohossat_cas_pratique.egg-info
 src/*.egg-info
+.neptune

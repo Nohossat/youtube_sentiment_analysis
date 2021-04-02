@@ -6,6 +6,7 @@ client = TestClient(app)
 HTTP_AUTH = "Basic Y2FzX3ByYXRpcXVlX25vbm86eW91dHViZQ=="
 PATH_TRAIN = "/train"
 
+
 def test_infer():
     response = client.post("/",
                            headers={"Authorization": HTTP_AUTH},
@@ -18,19 +19,19 @@ def test_infer():
 def test_train():
     response = client.post(PATH_TRAIN,
                            headers={"Authorization": HTTP_AUTH},
-                           json={"name": "test_model_api",
+                           json={"model_name": "test_model_api",
                                  "estimator": "SVC",
                                  "cv": False,
                                  "neptune_log": False})
 
     assert response.status_code == 200
-    assert round(response.json()['test/accuracy'], 3) == 0.999
+    assert round(response.json()['test/accuracy'], 3) == 0.857
 
 
 def test_train_false_model():
     response = client.post(PATH_TRAIN,
                            headers={"Authorization": HTTP_AUTH},
-                           json={"name": "test_model_api",
+                           json={"model_name": "test_model_api",
                                  "estimator": "SVC-fake",
                                  "cv": False})
 
@@ -41,13 +42,13 @@ def test_train_false_model():
 def test_train_false_dataset():
     response = client.post(PATH_TRAIN,
                            headers={"Authorization": HTTP_AUTH},
-                           json={"name": "test_model_api",
+                           json={"model_name": "test_model_api",
                                  "estimator": "SVC",
                                  "data_path": "../../data/comments-fake.csv",
                                  "cv": False})
 
     assert response.status_code == 200
-    assert response.json() == {"res": "The dataset doesn't exist"}
+    assert response.json() == {"res": "Can't load data"}
 
 
 def test_models_available():

@@ -95,12 +95,11 @@ def load_data(data_path):
     """
     try:
         data = pd.read_csv(data_path)
+        X, y = split_data(data)
+        return train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
     except FileNotFoundError as e:
         logging.error(e)
         return {"res": "The dataset doesn't exist"}
-
-    X, y = split_data(data)
-    return train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
 
 
 def get_models():
@@ -158,7 +157,11 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
     """
     Choose an estimator, train it and collect metrics in Neptune.ai
     """
-    X_train, X_test, y_train, y_test = load_data(params.data_path)
+
+    try:
+        X_train, X_test, y_train, y_test = load_data(params.data_path)
+    except ValueError:
+        return {"res": "Can't load data"}
 
     if params.estimator not in MODELS.keys():
         return {"res": f"The model isn't registered in the API. You can choose between {','.join(list(MODELS.keys()))}"}
@@ -263,7 +266,7 @@ async def get_available_models(credentials: HTTPBasicCredentials = Depends(valid
     """
     Get available models in the models folder
     """
-    get_models()
+    return get_models()
 
 
 @app.get("/report")

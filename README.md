@@ -1,8 +1,11 @@
 # Sentiment analysis API - in progress
 
 This FastAPI application helps you infering, training and evaluating your sentiment analysis models.
+You can choose the text dataset of your choice and a valid Scikit-Learn Classifier to perform sentiment analysis.
+You can also collect the classification metrics in any Neptune.ai project.
 
-## How to install
+
+## How to install the API
 
 ### With DockerHub - NOT WORKING YET
 
@@ -32,9 +35,27 @@ pip install -r requirements.txt
 python -m pip install -e .
 ```
 
+## How to link the API to your Neptune.ai account
+
+If you install this project with the Dockerfile, you can set the NEPTUNE_USER, NEPTUNE_PROJECT and NEPTUNE_TOKEN to your own.
+If they are correct, when running an training job, the data will be recorded in your project.
+
+
+## Usage
+
 To get the API started :
 
 ```
 cd src/nohossat_cas_pratique/
 uvicorn main:app
 ```
+
+### Endpoints
+
+|Endpoints| Description|
+|---------|------------|
+|/| you can predict the polarity of a comment with a default model or a model you registered in the **models** folder|
+|/train| you can train (with cross-validation) the Scikit-Learn Classifier of your choice and any dataset you pass as arguments. The neptune-log set to True, sends the results to the Neptune.ai project set in your environment|
+|/grid_train||
+|/models||
+|/reports||

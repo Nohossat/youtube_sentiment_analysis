@@ -21,16 +21,6 @@ THIRD_MSG = "the third step should be a SVC classifier"
 FOURTH_MSG = "the third step should be a lgbm classifier"
 
 
-def test_get_model():
-    data = pd.read_csv(data_path)
-    X, y = split_data(data)
-    model = get_model(model_estimator=SVC, data=(X, y))
-
-    assert isinstance(model.steps[0][1], NLPCleaner), FIRST_MSG
-    assert isinstance(model.steps[1][1], TfidfVectorizer), SECOND_MSG
-    assert isinstance(model.steps[2][1], SVC), THIRD_MSG
-
-
 def test_get_model_model_file():
     model = get_model(model_file=model_path)
 
@@ -42,21 +32,6 @@ def test_get_model_fake_model_file():
     fake_model_path = '../models/test_model.joblib'
     with pytest.raises(FileNotFoundError, match="The model doesn't exist"):
         get_model(model_file=fake_model_path)
-
-
-def test_get_model_none_data():
-    data = None
-
-    with pytest.raises(ValueError, match="Missing data values - please provide X and y values as a tuple"):
-        get_model(model_estimator=SVC, data=data)
-
-
-def test_get_model_no_model():
-    data = pd.read_csv(data_path)
-    X, y = split_data(data)
-
-    with pytest.raises(ValueError, match="Please provide a valid model joblib or the name of a Scikit Learn Estimator"):
-        get_model(model_file=None, model_estimator=None, data=(X, y))
 
 
 def test_create_pipeline():

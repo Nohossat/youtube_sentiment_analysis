@@ -20,8 +20,7 @@ def test_compute_metrics_cv():
     with open(model_path, "rb") as f:
         model = joblib.load(f)
         scores = compute_metrics_cv(X, y, model)
-
-        assert round(scores['mean_test_accuracy'], 3) == 0.865
+        assert round(scores['cv_test/mean__accuracy'], 3) == 0.865
 
 
 def test_compute_metrics_no_prob():

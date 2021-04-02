@@ -10,7 +10,7 @@ import pytest
 
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data, NLPCleaner
-from nohossat_cas_pratique.modeling import get_model, create_pipeline, run_model, run_grid_search
+from nohossat_cas_pratique.modeling import get_model, create_pipeline, run_grid_search
 
 module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
 data_path = os.path.join(module_path, "data", "comments.csv")
@@ -19,6 +19,7 @@ FIRST_MSG = "the first step should be a cleaner"
 SECOND_MSG = "the second step should be a tf-idf vectorizer"
 THIRD_MSG = "the third step should be a SVC classifier"
 FOURTH_MSG = "the third step should be a lgbm classifier"
+
 
 def test_get_model():
     data = pd.read_csv(data_path)
@@ -73,28 +74,6 @@ def test_create_pipeline_params():
     assert isinstance(pipe.steps[0][1], NLPCleaner), FIRST_MSG
     assert isinstance(pipe.steps[1][1], TfidfVectorizer), SECOND_MSG
     assert isinstance(pipe.steps[2][1], SVC), THIRD_MSG
-
-
-def test_run_model():
-    data = pd.read_csv(data_path)
-    X, y = split_data(data)
-    params = dict()
-    pipe = run_model(params=params, data=(X, y), model_estimator=LGBMClassifier)
-
-    assert isinstance(pipe.steps[0][1], NLPCleaner), FIRST_MSG
-    assert isinstance(pipe.steps[1][1], TfidfVectorizer), SECOND_MSG
-    assert isinstance(pipe.steps[2][1], LGBMClassifier), FOURTH_MSG
-
-
-def test_run_model_params():
-    data = pd.read_csv(data_path)
-    X, y = split_data(data)
-    params = {'n_estimators': 50, 'random_state': 0}
-    pipe = run_model(params=params, data=(X, y), model_estimator=LGBMClassifier)
-
-    assert isinstance(pipe.steps[0][1], NLPCleaner), FIRST_MSG
-    assert isinstance(pipe.steps[1][1], TfidfVectorizer), SECOND_MSG
-    assert isinstance(pipe.steps[2][1], LGBMClassifier), FOURTH_MSG
 
 
 def test_run_grid_search():

@@ -4,7 +4,7 @@ This FastAPI application helps you infering, training and evaluating your sentim
 
 ## How to install
 
-### With Docker (change docker image)
+### With Docker - NOT WORKING YET
 
 ```shell
 docker pull nohossat1/sentiment-analysis-api
@@ -20,10 +20,12 @@ cd youtube_sentiment_analysis
 virtualvenv
 source venv/bin/activate
 pip install -r requirements.txt
+python -m pip install -e .
 ```
 
 To get the API started :
 
 ```
+cd src/nohossat_cas_pratique/
 uvicorn main:app
 ```

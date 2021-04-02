@@ -31,7 +31,7 @@ start_logging(module_path)
 
 class Comment(BaseModel):
     msg: str
-    model: str = "sentiment_pipe"
+    model: str = "grid_search_SVC"
 
 
 class Model(BaseModel):

@@ -21,5 +21,6 @@ def send_email(url, recipient):
         print(response.body)
         print(response.headers)
         print("Email sent")
+        return response.status_code
     except Exception as e:
         print(e)

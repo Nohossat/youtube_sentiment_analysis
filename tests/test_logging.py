@@ -1,7 +1,5 @@
 import os
 
-import pytest
-
 import nohossat_cas_pratique
 from nohossat_cas_pratique.logging_app import start_logging
 

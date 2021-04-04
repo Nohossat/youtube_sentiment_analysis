@@ -17,10 +17,13 @@ Some environment variables must be passed to make the API running.
 You can set them in the Dockerfile, if you want to run the API inside a container.
 Or set them in your OS.
 
-**LOGIN** : name used to authenticate in the API
-**PASSWORD** : password used to authenticate in the API
-**NEPTUNE_USER**, **NEPTUNE_PROJECT**, **NEPTUNE_API_TOKEN** : if you want to use Neptune.ai as a MLOps tool, you can provide your username, project name and API token.
-**SENDGRID_API_KEY**, **SENDGRID_API_KEY**: if you want to enable notifications in your API, you must provide your SendGrid API KEY and the email from which the notifications will be sent from.
+| Variable | Description |
+|---------|------------|
+|**LOGIN**| name used to authenticate in the API |
+|**PASSWORD**| password used to authenticate in the API |
+|**NEPTUNE_USER**, **NEPTUNE_PROJECT**, **NEPTUNE_API_TOKEN** | if you want to use Neptune.ai as a MLOps tool, you can provide your username, project name and API token.|
+|**SENDGRID_API_KEY**, **SENDGRID_API_KEY**| if you want to enable notifications in your API, you must provide your SendGrid API KEY and the email from which the notifications will be sent from. |
+
 
 ### With Dockerfile
 

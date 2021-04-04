@@ -20,8 +20,12 @@ from nohossat_cas_pratique.modeling import create_pipeline, run_grid_search
 from nohossat_cas_pratique.monitor import record_metadata, activate_monitoring, create_exp, save_artifact
 from nohossat_cas_pratique.logging_app import start_logging
 from nohossat_cas_pratique.scoring import compute_metrics, compute_metrics_cv, get_grid_search_best_metrics
+from nohossat_cas_pratique.emailing import send_email
 
-app = FastAPI()
+app = FastAPI(title="Cas Pratique - Nohossat",
+              description="Here explain the project",
+              version="0.0.1")
+
 security = HTTPBasic()
 
 # config logging
@@ -30,7 +34,7 @@ start_logging(module_path)
 
 
 class Comment(BaseModel):
-    msg: str
+    msg: List[str]
     model: str = "grid_search_SVC"
 
 
@@ -41,6 +45,7 @@ class Model(BaseModel):
     cv: bool = False
     neptune_log: bool = True
     tags: List[str] = []
+    email_address: str = None
 
 
 class Grid(BaseModel):
@@ -50,23 +55,25 @@ class Grid(BaseModel):
     parameters: Dict[str, list] = {}
     neptune_log: bool = True
     tags: list = []
+    email_address: str = None
 
 
 MODELS = {
-        "LGBM": {"fct": LGBMClassifier,
-                 "default_hyperparams": {
-                     "clf__max_depth": [3, 10, -1],
-                     "clf__n_estimators": [50, 100, 200],
-                     "clf__class_weight": ['balanced'],
-                     "clf__random_state": [43]}},
-        "SVC": {"fct": SVC,
-                "default_hyperparams": {'clf__C': [5, 10, 100],
-                                'clf__class_weight': ['balanced', {0: 0.37, 1: 0.63}],
-                                'clf__kernel': ['poly', 'rbf', 'sigmoid'],
-                                'clf__gamma': [0.001, "scale", "auto"]}}
-    }
+    "LGBM": {"fct": LGBMClassifier,
+             "default_hyperparams": {
+                 "clf__max_depth": [3, 10, -1],
+                 "clf__n_estimators": [50, 100, 200],
+                 "clf__class_weight": ['balanced'],
+                 "clf__random_state": [43]}},
+    "SVC": {"fct": SVC,
+            "default_hyperparams": {'clf__C': [5, 10, 100],
+                                    'clf__class_weight': ['balanced', {0: 0.37, 1: 0.63}],
+                                    'clf__kernel': ['poly', 'rbf', 'sigmoid'],
+                                    'clf__gamma': [0.001, "scale", "auto"]}}
+}
 
 best_model_name = "grid_search_SVC"
+
 
 def validate_access(credentials: HTTPBasicCredentials = Depends(security)):
     """
@@ -122,7 +129,7 @@ def get_models():
 
 
 @app.post("/")
-async def infer(comment: Comment, credentials: HTTPBasicCredentials = Depends(validate_access)):
+async def infer(comment: Comment):
     """
     Predict a comment polarity (Positive / Negative)
     :param comment:
@@ -143,9 +150,16 @@ async def infer(comment: Comment, credentials: HTTPBasicCredentials = Depends(va
 
     # inference
     if model is not None:
-        pred = model.predict([comment.msg])[0]
-        prediction = "Positive" if pred else "Negative"
-        res["prediction"] = prediction
+        preds = model.predict(comment.msg)
+        predictions = []
+
+        for pred in preds:
+            prediction = "Positive" if pred else "Negative"
+            predictions.append(prediction)
+
+        if len(predictions) == 1:
+            predictions = predictions[0]
+        res["prediction"] = predictions
     else :
         res["error"] = "Couldn't make a prediction : the model hasn't been found and no default model"
 
@@ -194,10 +208,13 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
             record_metadata(cv_metrics, run)
         record_metadata(metrics, run)
         save_artifact(data_path=params.data_path, model_file=model_file, run=run)
-        print(run.print_structure())
+
+        # notify user
+        if params.email_address is not None:
+            send_email("https://neptune.ai", params.email_address)
+
         run.stop()
 
-    # TODO return results by email
 
     return metrics
 
@@ -255,9 +272,13 @@ async def grid_train(params: Grid, credentials: HTTPBasicCredentials = Depends(v
         record_metadata(cv_results, run)
         record_metadata(metrics, run)
         save_artifact(data_path=params.data_path, model_file=model_file, run=run)
+
+        # notify user
+        if params.email_address is not None:
+            send_email("https://neptune.ai", params.email_address)
+
         run.stop()
 
-    # TODO return results by email
     return metrics
 
 

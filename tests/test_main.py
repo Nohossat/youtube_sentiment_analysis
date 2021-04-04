@@ -9,11 +9,10 @@ PATH_TRAIN = "/train"
 
 def test_infer():
     response = client.post("/",
-                           headers={"Authorization": HTTP_AUTH},
-                           json={"msg": "J'ai adoré ce restaurant"})
+                           json={"msg": ["J'ai adoré ce restaurant", "J'ai détesté cet hôtel."]})
 
     assert response.status_code == 200
-    assert response.json() == {"prediction": "Positive"}
+    assert response.json() == {"prediction": ["Positive", "Positive"]}
 
 
 def test_train():
@@ -49,6 +48,18 @@ def test_train_false_dataset():
 
     assert response.status_code == 200
     assert response.json() == {"res": "Can't load data"}
+
+
+def test_grid_train_model():
+    response = client.post("/grid_train",
+                           headers={"Authorization": HTTP_AUTH},
+                           json={"model_name": "test_model_api",
+                                 "estimator": "SVC",
+                                 "cv": False,
+                                 "neptune_log": False})
+
+    assert response.status_code == 200
+    assert round(response.json()['test/accuracy'], 3) == 0.857
 
 
 def test_models_available():

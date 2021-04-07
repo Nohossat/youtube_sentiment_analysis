@@ -17,7 +17,7 @@ import pandas as pd
 import nohossat_cas_pratique
 from nohossat_cas_pratique.preprocessing import split_data
 from nohossat_cas_pratique.modeling import create_pipeline, run_grid_search
-from nohossat_cas_pratique.monitor import record_metadata, activate_monitoring, create_exp, save_artifact
+from nohossat_cas_pratique.monitor import record_metadata, activate_monitoring, create_exp, save_artifact, get_project
 from nohossat_cas_pratique.logging_app import start_logging
 from nohossat_cas_pratique.scoring import compute_metrics, compute_metrics_cv, get_grid_search_best_metrics
 from nohossat_cas_pratique.emailing import send_email
@@ -184,6 +184,7 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
     run = None
     if params.neptune_log:
         run = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+        print(run['sys/id'].fetch())
         params.tags.extend([params.estimator, "solo"])
         create_exp(None, params.tags, run)
 
@@ -211,7 +212,8 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
 
         # notify user
         if params.email_address is not None:
-            send_email("https://neptune.ai", params.email_address)
+            url = f"{run._backend.get_display_address()}/{os.getenv('NEPTUNE_USER')}/{os.getenv('NEPTUNE_PROJECT')}/e/{run['sys/id'].fetch()}"
+            send_email(url, params.email_address)
 
         run.stop()
 
@@ -275,7 +277,8 @@ async def grid_train(params: Grid, credentials: HTTPBasicCredentials = Depends(v
 
         # notify user
         if params.email_address is not None:
-            send_email("https://neptune.ai", params.email_address)
+            url = f"{run._backend.get_display_address()}/{os.getenv('NEPTUNE_USER')}/{os.getenv('NEPTUNE_PROJECT')}/e/{run['sys/id'].fetch()}"
+            send_email(url, params.email_address)
 
         run.stop()
 
@@ -296,8 +299,9 @@ async def report(credentials: HTTPBasicCredentials = Depends(validate_access)):
     Get Report Board as a Pandas Dataframe converted to JSON
     :return: JSON
     """
-    project = activate_monitoring(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
+    project = get_project(os.getenv('NEPTUNE_USER'), os.getenv('NEPTUNE_PROJECT'))
 
-    data = project.get_leaderboard()
-    result = data.to_json(orient="split")
+    # Get dashboard with runs contributed by 'sophia'
+    df = project.get_runs_table().as_pandas()
+    result = df.to_json(orient="split")
     return result

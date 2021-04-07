@@ -1,6 +1,10 @@
 import neptune.new as neptune
 
 
+def get_project(user, project):
+    return neptune.get_project(project=f'{user}/{project}')
+
+
 def activate_monitoring(user, project):
     """
     Return a valid Neptune run instance

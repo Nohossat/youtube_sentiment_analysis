@@ -27,13 +27,13 @@ addons:
 script:
   - pytest --cov-report xml:tests/reports/coverage.xml --cov=nohossat_cas_pratique tests/
   - sonar-scanner
-  - docker build -t nohossat1/cas-pratique:latest .
-  - docker tag nohossat1/cas-pratique:latest registry.heroku.com/$HEROKU_APP/web
+  - docker build -t nohossat1/cas_pratique:latest .
+  - docker tag nohossat1/cas_pratique:latest registry.heroku.com/$HEROKU_APP/web
 
 deploy:
   provider: script
   script:
-    docker push nohossat1/cas-pratique:latest;
+    docker push nohossat1/cas_pratique:latest;
     docker push registry.heroku.com/$HEROKU_APP/web;
     heroku container:release web --app $HEROKU_APP
   on:

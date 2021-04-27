@@ -76,7 +76,6 @@ neptune-client==0.9.1
 nest-asyncio==1.5.1
 nltk==3.5
 nodeenv==1.5.0
--e git+https://github.com/Nohossat/youtube_sentiment_analysis.git@b55fe2baa42c242de01320e09e74dc258a601040#egg=nohossat_cas_pratique
 notebook==6.3.0
 numpy==1.20.2
 oauthlib==3.1.0

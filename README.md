@@ -10,12 +10,15 @@ For long-running models, you can choose to be notified when the training is over
 
 ## How to install the API
 
-#### Environment variables
+#### Prerequisites : Environment variables
 
 Some environment variables must be passed to make the API running.
 
-You can set them in the Dockerfile, if you want to run the API inside a container.
-Or set them in your OS.
+Depending the deployment option used, the environment variables will be set differently.
+
+If you want to launch the application inside a Docker container, update the environment variables in the Dockerfile.
+If you want to run the application inside a Python environment, add the variables locally.
+
 
 | Variable | Description |
 |---------|------------|
@@ -34,20 +37,20 @@ docker build -t sentiment-analysis .
 docker run -p 5000:8000 --name sentiment-analysis-api sentiment-analysis:latest
 ```
 
+The application will be run on **http://0.0.0.0:5000/docs**.
+
 ### With Virtualenv
 
 ```shell
-pip install virtualenv
 git clone https://github.com/Nohossat/youtube_sentiment_analysis.git
 cd youtube_sentiment_analysis
-virtualvenv
-source venv/bin/activate
+pip install virtualenv
+virtualvenv venv
+source venv/bin/activate # MAC/Linux
+.\venv\Scripts\activate # Windows
 pip install -r requirements.txt
 python -m pip install -e .
 ```
-
-
-## Usage
 
 To get the API started :
 
@@ -55,6 +58,8 @@ To get the API started :
 cd src/nohossat_cas_pratique/
 uvicorn main:app
 ```
+
+The application will be run on **http://127.0.0.1:8000/docs**.
 
 ### Endpoints
 

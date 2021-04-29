@@ -33,6 +33,7 @@ dill = "*"
 pytest-cov = "*"
 pylint = "*"
 sendgrid = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

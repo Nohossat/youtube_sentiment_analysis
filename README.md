@@ -4,7 +4,7 @@ This FastAPI application helps you infering, training and evaluating your sentim
 You can choose the text dataset of your choice and a SVM classifier or a LGBM model to perform sentiment analysis.
 The model chosen will be included in a pipeline which include a text cleaning step and a TF-IDF vectorizer.
 
-The API collect general classification metrics if needed with the integration of Neptune.ai library.
+The API collects general classification metrics if needed with the integration of Neptune.ai library.
 For long-running models, you can choose to be notified when the training is over.
 
 
@@ -14,18 +14,14 @@ For long-running models, you can choose to be notified when the training is over
 
 Some environment variables must be passed to make the API running.
 
-Depending the deployment option used, the environment variables will be set differently.
-
-If you want to launch the application inside a Docker container, update the environment variables in the Dockerfile.
-If you want to run the application inside a Python environment, add the variables locally.
-
+Please replace the values in the `.env` to pass environment variables to your Docker container or your local application.
 
 | Variable | Description |
 |---------|------------|
-|**LOGIN**| name used to authenticate in the API |
-|**PASSWORD**| password used to authenticate in the API |
-|**NEPTUNE_USER**, **NEPTUNE_PROJECT**, **NEPTUNE_API_TOKEN** | if you want to use Neptune.ai as a MLOps tool, you can provide your username, project name and API token.|
-|**SENDGRID_API_KEY**, **SENDGRID_API_KEY**| if you want to enable notifications in your API, you must provide your SendGrid API KEY and the email from which the notifications will be sent from. |
+|`LOGIN`| name used to authenticate in the API |
+|`PASSWORD`| password used to authenticate in the API |
+|`NEPTUNE_USER`, `NEPTUNE_PROJECT`, `NEPTUNE_API_TOKEN` | if you want to use Neptune.ai as a MLOps tool, you can provide your username, project name and API token.|
+|`SENDGRID_API_KEY`, `SENDGRID_API_KEY`| if you want to enable notifications in your API, you must provide your SendGrid API KEY and the email from which the notifications will be sent from. |
 
 
 ### With Dockerfile
@@ -33,8 +29,7 @@ If you want to run the application inside a Python environment, add the variable
 ```
 git clone https://github.com/Nohossat/youtube_sentiment_analysis.git
 cd youtube_sentiment_analysis
-docker build -t sentiment-analysis .
-docker run -p 5000:8000 --name sentiment-analysis-api sentiment-analysis:latest
+docker-compose up --build
 ```
 
 The application will be run on **http://0.0.0.0:5000/docs**.

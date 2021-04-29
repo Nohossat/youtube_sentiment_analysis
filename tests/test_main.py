@@ -23,6 +23,7 @@ def test_train():
                                  "cv": False,
                                  "neptune_log": False})
 
+    print(response.json())
     assert response.status_code == 200
     assert round(response.json()['test/accuracy'], 3) == 0.857
 
@@ -58,6 +59,7 @@ def test_grid_train_model():
                                  "cv": False,
                                  "neptune_log": False})
 
+    print(response.json())
     assert response.status_code == 200
     assert round(response.json()['test/accuracy'], 3) == 0.857
 

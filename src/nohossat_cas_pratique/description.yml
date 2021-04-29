@@ -1,0 +1,18 @@
+title: Sentiment analysis tool
+description: This FastAPI application helps you infering, training and evaluating your sentiment analysis models. You can choose the text dataset of your choice and a SVM classifier or a LGBM model to perform sentiment analysis. The model chosen will be included in a pipeline which include a text cleaning step and a TF-IDF vectorizer. The API collects general classification metrics if needed with the integration of Neptune.ai library. For long-running models, you can choose to be notified when the training is over.
+version: 0.0.1
+tags:
+  - name: predict
+    description: Predict the polarity of several comments with a default model or a model you registered in the **models** folder.
+
+  - name: train
+    description: Train (with cross-validation) a SVM classifier or a LGBM model with any dataset you pass as arguments. The `neptune-log` set to `True`, sends the results to the Neptune.ai project set in your environment. You can also be notified by email when the training is done.
+
+  - name: grid_train
+    description: Optimize a SVM classifier or LGBM hyperparameters. The model performance is recorded in Neptune.ai if needed. You can also be notified by email when the training is done.
+
+  - name: models
+    description: Display the available models in the API. They are registered in the **/models** folder.
+
+  - name: reports
+    description: You can fetch a JSON report of the models scores recorded in Neptune.ai.

@@ -27,7 +27,8 @@ from nohossat_cas_pratique.scoring import compute_metrics, compute_metrics_cv, g
 
 
 # load API description
-api_desc = yaml.load(open("description.yml"), Loader=yaml.FullLoader)
+description_file = os.path.join(os.path.dirname(nohossat_cas_pratique.__file__), "description.yml")
+api_desc = yaml.load(open(description_file), Loader=yaml.FullLoader)
 
 app = FastAPI(title=api_desc["title"],
               description=api_desc["description"],

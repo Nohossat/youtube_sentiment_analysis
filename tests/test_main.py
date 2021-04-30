@@ -3,7 +3,7 @@ from nohossat_cas_pratique.main import app
 
 client = TestClient(app)
 
-HTTP_AUTH = "Basic Y2FzX3ByYXRpcXVlX25vbm86eW91dHViZQ=="
+HTTP_AUTH = "Basic bm9ub19kZXY6MSNROFZDNjM4aTVeNnM="
 PATH_TRAIN = "/train"
 
 
@@ -35,7 +35,7 @@ def test_train_false_model():
                                  "estimator": "SVC-fake",
                                  "cv": False})
 
-    assert response.status_code == 200
+    assert response.status_code == 404
     assert response.json() == {"res": "The model isn't registered in the API. You can choose between LGBM,SVC"}
 
 
@@ -47,7 +47,7 @@ def test_train_false_dataset():
                                  "data_path": "../../data/comments-fake.csv",
                                  "cv": False})
 
-    assert response.status_code == 200
+    assert response.status_code == 400
     assert response.json() == {"res": "Can't load data"}
 
 

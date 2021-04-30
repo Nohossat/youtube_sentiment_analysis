@@ -18,13 +18,13 @@ from sklearn.model_selection import train_test_split
 import yaml
 
 import nohossat_cas_pratique
-from nohossat_cas_pratique.emailing import send_email
+from nohossat_cas_pratique.emailing import send_email, send_email_user_creation
 from nohossat_cas_pratique.logging_app import start_logging
 from nohossat_cas_pratique.modeling import create_pipeline, run_grid_search
 from nohossat_cas_pratique.monitor import record_metadata, activate_monitoring, create_exp, save_artifact, get_project
 from nohossat_cas_pratique.preprocessing import split_data
 from nohossat_cas_pratique.scoring import compute_metrics, compute_metrics_cv, get_grid_search_best_metrics
-
+from nohossat_cas_pratique.user_creation import get_existing_user
 
 # load API description
 description_file = os.path.join(os.path.dirname(nohossat_cas_pratique.__file__), "description.yml")
@@ -50,10 +50,17 @@ class Comment(BaseModel):
     model: str = "grid_search_SVC"
 
 
+class User(BaseModel):
+    name: str
+    email: str
+
+
 class Model(BaseModel):
     model_name: str
     estimator: str
     data_path: str = os.path.join(module_path, "data", "comments.csv")
+    comment_col : str = "comment"
+    target_col: str = "sentiment"
     cv: bool = False
     neptune_log: bool = True
     tags: List[str] = []
@@ -62,6 +69,8 @@ class Model(BaseModel):
 
 class Grid(BaseModel):
     data_path: str = os.path.join(module_path, "data", "comments.csv")
+    comment_col : str = "comment"
+    target_col: str = "sentiment"
     model_name: str = "grid_search_api_sentiment_pipe"
     estimator: str = "SVC"
     parameters: Dict[str, list] = {}
@@ -94,8 +103,18 @@ def validate_access(credentials: HTTPBasicCredentials = Depends(security)):
     :return: the name passed in the credentials
     """
 
-    correct_username = secrets.compare_digest(credentials.username, os.getenv('LOGIN'))
-    correct_password = secrets.compare_digest(credentials.password, os.getenv('PASSWORD'))
+    user = get_existing_user(credentials.username)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Username doesn't exist",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    correct_username = secrets.compare_digest(credentials.username, user[0])
+    correct_password = secrets.compare_digest(credentials.password, user[2])
+
     if not (correct_username and correct_password):
         logging.error("Incorrect username or password")
         raise HTTPException(
@@ -106,7 +125,7 @@ def validate_access(credentials: HTTPBasicCredentials = Depends(security)):
     return credentials.username
 
 
-def load_data(data_path):
+def load_data(data_path, comment_col, target_col):
     """
     Validate the existence of the dataset
     :param data_path:
@@ -114,11 +133,14 @@ def load_data(data_path):
     """
     try:
         data = pd.read_csv(data_path)
-        X, y = split_data(data)
+        X, y = split_data(data, comment_col=comment_col, target_col=target_col)
         return train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
     except FileNotFoundError as e:
         logging.error(e)
-        return {"res": "The dataset doesn't exist"}
+        raise FileNotFoundError("The dataset doesn't exist.")
+    except ValueError as e:
+        logging.error(e)
+        raise ValueError("The comment or target column names are incorrect.")
 
 
 def get_models():
@@ -138,6 +160,11 @@ def get_models():
                 models.append(model.group(1))
         break
     return models
+
+
+@app.post("/create_user", tags=["create new account"])
+async def create(user: User):
+    send_email_user_creation(user.name, user.email)
 
 
 @app.post("/", tags=["predict"])
@@ -185,13 +212,13 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
     """
 
     try:
-        X_train, X_test, y_train, y_test = load_data(params.data_path)
-    except ValueError:
-        return {"res": "Can't load data"}
+        X_train, X_test, y_train, y_test = load_data(params.data_path, params.comment_col, params.target_col)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     params.estimator = params.estimator.upper()
     if params.estimator not in MODELS.keys():
-        return {"res": f"The model isn't registered in the API. You can choose between {','.join(list(MODELS.keys()))}"}
+        raise HTTPException(status_code=404, detail=f"The model isn't registered in the API. You can choose between {','.join(list(MODELS.keys()))}")
 
     # start logging
     run = None
@@ -202,7 +229,7 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
             params.tags.extend([params.estimator, "solo"])
             create_exp(None, params.tags, run)
         except neptune.exceptions.NeptuneInvalidApiTokenException as e:
-            return {"res" : "Not currently connected to NEPTUNE.ai. Ask the developer to provide its user access."}
+            raise HTTPException(status_code=400, detail="Not currently connected to NEPTUNE.ai. Ask the developer to provide its user access.")
 
     # run model
     hyper_params = {}
@@ -235,7 +262,6 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
 
         run.stop()
 
-
     return {'metrics' : metrics, "email_sent" : res}
 
 
@@ -244,11 +270,15 @@ async def grid_train(params: Grid, credentials: HTTPBasicCredentials = Depends(v
     """
     Choose an estimator, and hyper-parameters to optimize for a GridSearchCV. Results can be recorded in Neptune.ai.
     """
-    X_train, X_test, y_train, y_test = load_data(params.data_path)
+
+    try:
+        X_train, X_test, y_train, y_test = load_data(params.data_path, params.comment_col, params.target_col)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     params.estimator = params.estimator.upper()
     if params.estimator not in MODELS.keys():
-        return {"res": f"The model isn't registered in the API. You can choose between {','.join(list(MODELS.keys()))}"}
+        raise HTTPException(status_code=400, detail=f"The model isn't registered in the API. You can choose between {','.join(list(MODELS.keys()))}")
 
     if params.parameters is None:
         params.parameters = MODELS[params.estimator]["default_hyperparams"]
@@ -267,7 +297,7 @@ async def grid_train(params: Grid, credentials: HTTPBasicCredentials = Depends(v
             params.tags.extend([params.estimator, "grid"])
             create_exp(params.parameters, params.tags, run)
         except neptune.exceptions.NeptuneInvalidApiTokenException as e:
-            return {"res" : "Not currently connected to NEPTUNE.ai. Ask the developer to provide its user access."}
+            raise HTTPException(status_code=400, detail="Not currently connected to NEPTUNE.ai. Ask the developer to provide its user access.")
 
     # run model
     list_metrics = ['precision', 'recall', 'accuracy', 'f1_weighted', 'roc_auc']
@@ -332,4 +362,4 @@ async def report(credentials: HTTPBasicCredentials = Depends(validate_access)):
         result = df.to_json(orient="split")
         return result
     except neptune.exceptions.NeptuneInvalidApiTokenException as e:
-            return {"res" : "Not currently connected to NEPTUNE.ai. Ask the developer to provide its user access."}
+            raise HTTPException(status_code=400, detail="Not currently connected to NEPTUNE.ai. Ask the developer to provide its user access.")

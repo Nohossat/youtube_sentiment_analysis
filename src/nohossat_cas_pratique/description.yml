@@ -2,6 +2,9 @@ title: Sentiment analysis tool
 description: This FastAPI application helps you infering, training and evaluating your sentiment analysis models. You can choose the text dataset of your choice and a SVM classifier or a LGBM model to perform sentiment analysis. The model chosen will be included in a pipeline which include a text cleaning step and a TF-IDF vectorizer. The API collects general classification metrics if needed with the integration of Neptune.ai library. For long-running models, you can choose to be notified when the training is over.
 version: 0.0.1
 tags:
+  - name: create new account
+    description: To enjoy our special features, please create an account first. Provide your username and a valid email address to receive your password. It will be asked the first you will want to access to the premium features.
+
   - name: predict
     description: Predict the polarity of several comments with a default model or a model you registered in the **models** folder.
 

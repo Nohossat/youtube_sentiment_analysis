@@ -20,6 +20,7 @@ def test_compute_metrics_cv():
     with open(model_path, "rb") as f:
         model = joblib.load(f)
         scores = compute_metrics_cv(X, y, model)
+        print(scores)
         assert round(scores['cv_test/mean__accuracy'], 3) == 0.865
 
 
@@ -42,4 +43,5 @@ def test_compute_metrics():
     with open(model_path, "rb") as f:
         model = joblib.load(f)
         scores = compute_metrics(X, y, model)
+        print(scores)
         assert round(scores['test/accuracy'], 3) == 0.967

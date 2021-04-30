@@ -2,7 +2,7 @@ import neptune.new as neptune
 
 
 def get_project(user, project):
-    return neptune.get_project(project=f'{user}/{project}')
+    return neptune.get_project(f'{user}/{project}')
 
 
 def activate_monitoring(user, project):
@@ -14,7 +14,6 @@ def activate_monitoring(user, project):
     """
     return neptune.init(project=f'{user}/{project}',
                         source_files=['*.py', 'requirements.txt'])
-
 
 
 def create_exp(hyper_params, tags, run):

@@ -1,0 +1,19 @@
+version : '3.7'
+services:
+    youtube_sentiment_api:
+        env_file:
+            - .env
+        build:
+            context: '.'
+            dockerfile: './Dockerfile'
+        image : 'cas-pratique-1'
+        volumes:
+            - ./tmp:/tmp
+        ports:
+            - '0.0.0.0:5000:8000'
+        networks:
+            - youtube_sentiment_net
+
+networks:
+    youtube_sentiment_net:
+        driver: bridge

@@ -1,25 +1,42 @@
+import numpy as np
 import re
 
-from sklearn.base import BaseEstimator, TransformerMixin
-from stop_words import get_stop_words
 from nltk.stem.snowball import SnowballStemmer
+from sklearn.base import BaseEstimator, TransformerMixin
 import spacy
+from stop_words import get_stop_words
+
 
 nlp = spacy.load("fr_core_news_sm")
 
 
-def split_data(data):
+def split_data(data, comment_col="comment", target_col="sentiment"):
     """
     split dataset between features and label
     :param data: Pandas DataFrame
     :return: a tuple with features and label values
     """
-    target = "sentiment"
-    X = data.drop(target, axis = 1)
-    X = [comment[0] for comment in X.values]
-    y = data[target]
-    y = y.values.tolist()
-    return X, y
+
+    try:
+        X = data[comment_col]
+
+        if X.dtype != np.dtype('O'):
+            raise ValueError("The comment column must have strings")
+
+        X = list(X.values)
+        y = data[target_col]
+
+        if y.dtype not in (np.dtype("int64"), np.dtype("float64")):
+            raise ValueError("The target column isn't numeric")
+
+        y = y.values.tolist()
+        return X, y
+    except ValueError as e:
+        raise ValueError(str(e))
+    except KeyError as e:
+        raise KeyError("Incorrect column names")
+
+
 
 
 class NLPCleaner(BaseEstimator, TransformerMixin):

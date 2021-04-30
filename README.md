@@ -1,4 +1,4 @@
-# Sentiment analysis API - in progress
+# Sentiment analysis API
 
 This FastAPI application helps you infering, training and evaluating your sentiment analysis models.
 You can choose the text dataset of your choice and a SVM classifier or a LGBM model to perform sentiment analysis.

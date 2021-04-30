@@ -16,11 +16,10 @@ def create_random_pwd():
 
 def create_connection(action):
   module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
-  data_path = os.path.join(module_path, "data", "users.db")
+  db_file = os.path.join(module_path, "data", "users.db")
 
   conn = None
   res = None
-  print(db_file)
   try:
     conn = sqlite3.connect(db_file)
     res = action(conn)

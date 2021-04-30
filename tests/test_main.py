@@ -48,7 +48,7 @@ def test_train_false_dataset():
                                  "cv": False})
 
     assert response.status_code == 400
-    assert response.json() == {"detail": "Can't load data"}
+    assert response.json() == {"detail": "The dataset doesn't exist."}
 
 
 def test_grid_train_model():

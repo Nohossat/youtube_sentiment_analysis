@@ -11,6 +11,7 @@ WORKDIR /api
 COPY setup.cfg .
 COPY setup.py .
 COPY data/comments.csv ./data
+COPY data/users.db ./data
 COPY models/sentiment_pipe.joblib ./models
 COPY models/grid_search_SVC.joblib ./models
 COPY models/SVC_solo.joblib ./models

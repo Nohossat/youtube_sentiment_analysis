@@ -5,9 +5,6 @@ import os
 
 import nohossat_cas_pratique
 
-module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
-data_path = os.path.join(module_path, "data", "users.db")
-
 def create_random_pwd():
     letters = ''.join(random.choice(string.ascii_letters) for i in range(10))
     digits = ''.join(random.choice(string.digits) for i in range(10))
@@ -17,9 +14,13 @@ def create_random_pwd():
     return pwd
 
 
-def create_connection(action, db_file=data_path):
+def create_connection(action):
+  module_path = os.path.dirname(os.path.dirname(os.path.dirname(nohossat_cas_pratique.__file__)))
+  data_path = os.path.join(module_path, "data", "users.db")
+
   conn = None
   res = None
+  print(db_file)
   try:
     conn = sqlite3.connect(db_file)
     res = action(conn)

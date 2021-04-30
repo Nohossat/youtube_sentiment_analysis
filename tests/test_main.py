@@ -25,7 +25,7 @@ def test_train():
 
     print(response.json())
     assert response.status_code == 200
-    assert round(response.json()['metrics']['test/accuracy'], 3) == 0.857
+    assert response.json() == {'res': 'The model is running. You will receive a mail if you provided your email address.'}
 
 
 def test_train_false_model():
@@ -61,7 +61,7 @@ def test_grid_train_model():
 
     print(response.json())
     assert response.status_code == 200
-    assert round(response.json()['metrics']['test/accuracy'], 3) == 0.857
+    assert response.json() == {'res': 'The model is running. You will receive a mail if you provided your email address.'}
 
 
 def test_models_available():

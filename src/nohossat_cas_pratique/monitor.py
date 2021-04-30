@@ -13,7 +13,7 @@ def activate_monitoring(user, project):
     :return: Neptune.new.run object
     """
     return neptune.init(project=f'{user}/{project}',
-                    source_files=['*.py', 'requirements.txt'])
+                        source_files=['*.py', 'requirements.txt'])
 
 
 def create_exp(hyper_params, tags, run):

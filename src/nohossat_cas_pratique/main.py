@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, BackgroundTasks
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from typing import List, Dict
@@ -162,6 +162,84 @@ def get_models():
     return models
 
 
+def run_model(params, run, X_train, X_test, y_train, y_test):
+    # run model
+    hyper_params = {}
+    if params.estimator == "SVC":
+        hyper_params["probability"] = True
+    model = create_pipeline(model_estimator=MODELS[params.estimator]["fct"], params=hyper_params)
+    model.fit(X_train, y_train)
+
+
+    # save model
+    model_file = os.path.join(module_path, "models", f"{params.model_name}.joblib")
+    joblib.dump(model, model_file)
+
+    # get CV metrics and test metrics and log them in Neptune
+    if params.cv:
+        cv_metrics = compute_metrics_cv(X_train, y_train, model)
+    metrics = compute_metrics(X_test, y_test, model)
+
+    res = "Not sent"
+
+    if run is not None:
+        if params.cv:
+            record_metadata(cv_metrics, run)
+        record_metadata(metrics, run)
+        save_artifact(data_path=params.data_path, model_file=model_file, run=run)
+
+        # notify user
+        if params.email_address is not None:
+            url = f"{run._backend.get_display_address()}/{os.getenv('NEPTUNE_USER')}/{os.getenv('NEPTUNE_PROJECT')}/e/{run['sys/id'].fetch()}"
+            res = send_email(url, params.email_address)
+
+        run.stop()
+
+    return {'metrics' : metrics, "email_sent" : res}
+
+
+def grid_run_model(params, run, X_train, X_test, y_train, y_test):
+    # run model
+    list_metrics = ['precision', 'recall', 'accuracy', 'f1_weighted', 'roc_auc']
+    refit = "roc_auc"
+
+    pipe = create_pipeline(model_estimator=MODELS[params.estimator]["fct"], params=None)
+
+    model = run_grid_search(model=pipe,
+                            params=params.parameters,
+                            data=(X_train, y_train),
+                            metrics=list_metrics,
+                            refit=refit)
+
+    # record best params
+    if run is not None:
+        run['best_params'] = model.best_params_
+
+    # collect cv_results and test metrics
+    cv_results = get_grid_search_best_metrics(model, list_metrics)
+    metrics = compute_metrics(X_test, y_test, model)
+
+    # save model
+    model_file = os.path.join(module_path, "models", f"{params.model_name}.joblib")
+    joblib.dump(model, model_file)
+
+    res = "Not sent"
+
+    if run is not None:
+        record_metadata(cv_results, run)
+        record_metadata(metrics, run)
+        save_artifact(data_path=params.data_path, model_file=model_file, run=run)
+
+        # notify user
+        if params.email_address is not None:
+            url = f"{run._backend.get_display_address()}/{os.getenv('NEPTUNE_USER')}/{os.getenv('NEPTUNE_PROJECT')}/e/{run['sys/id'].fetch()}"
+            res = send_email(url, params.email_address)
+
+        run.stop()
+
+    return {'metrics' : metrics, "email_sent" : res}
+
+
 @app.post("/create_user", tags=["create new account"])
 async def create(user: User):
     send_email_user_creation(user.name, user.email)
@@ -206,11 +284,10 @@ async def infer(comment: Comment):
 
 
 @app.post("/train", tags=["train"])
-async def train(params: Model, credentials: HTTPBasicCredentials = Depends(validate_access)):
+async def train(params: Model, background_tasks: BackgroundTasks, credentials: HTTPBasicCredentials = Depends(validate_access)):
     """
     Choose an estimator, train it and collect metrics in Neptune.ai
     """
-
     try:
         X_train, X_test, y_train, y_test = load_data(params.data_path, params.comment_col, params.target_col)
     except Exception as e:
@@ -231,42 +308,13 @@ async def train(params: Model, credentials: HTTPBasicCredentials = Depends(valid
         except neptune.exceptions.NeptuneInvalidApiTokenException as e:
             raise HTTPException(status_code=400, detail="Not currently connected to NEPTUNE.ai. Ask the developer to provide its user access.")
 
-    # run model
-    hyper_params = {}
-    if params.estimator == "SVC":
-        hyper_params["probability"] = True
-    model = create_pipeline(model_estimator=MODELS[params.estimator]["fct"], params=hyper_params)
-    model.fit(X_train, y_train)
-
-    # save model
-    model_file = os.path.join(module_path, "models", f"{params.model_name}.joblib")
-    joblib.dump(model, model_file)
-
-    # get CV metrics and test metrics and log them in Neptune
-    if params.cv:
-        cv_metrics = compute_metrics_cv(X_train, y_train, model)
-    metrics = compute_metrics(X_test, y_test, model)
-
-    res = "Not sent"
-
-    if run is not None:
-        if params.cv:
-            record_metadata(cv_metrics, run)
-        record_metadata(metrics, run)
-        save_artifact(data_path=params.data_path, model_file=model_file, run=run)
-
-        # notify user
-        if params.email_address is not None:
-            url = f"{run._backend.get_display_address()}/{os.getenv('NEPTUNE_USER')}/{os.getenv('NEPTUNE_PROJECT')}/e/{run['sys/id'].fetch()}"
-            res = send_email(url, params.email_address)
-
-        run.stop()
-
-    return {'metrics' : metrics, "email_sent" : res}
+    # run modeling in the background
+    background_tasks.add_task(run_model, params, run, X_train, X_test, y_train, y_test)
+    return {'res' : "The model is running. You will receive a mail if you provided your email address."}
 
 
 @app.post("/grid_train", tags=["grid_train"])
-async def grid_train(params: Grid, credentials: HTTPBasicCredentials = Depends(validate_access)):
+async def grid_train(params: Grid, background_tasks: BackgroundTasks, credentials: HTTPBasicCredentials = Depends(validate_access)):
     """
     Choose an estimator, and hyper-parameters to optimize for a GridSearchCV. Results can be recorded in Neptune.ai.
     """
@@ -299,44 +347,9 @@ async def grid_train(params: Grid, credentials: HTTPBasicCredentials = Depends(v
         except neptune.exceptions.NeptuneInvalidApiTokenException as e:
             raise HTTPException(status_code=400, detail="Not currently connected to NEPTUNE.ai. Ask the developer to provide its user access.")
 
-    # run model
-    list_metrics = ['precision', 'recall', 'accuracy', 'f1_weighted', 'roc_auc']
-    refit = "roc_auc"
-    pipe = create_pipeline(model_estimator=MODELS[params.estimator]["fct"], params=None)
-
-    model = run_grid_search(model=pipe,
-                            params=params.parameters,
-                            data=(X_train, y_train),
-                            metrics=list_metrics,
-                            refit=refit)
-
-    # record best params
-    if run is not None:
-        run['best_params'] = model.best_params_
-
-    # collect cv_results and test metrics
-    cv_results = get_grid_search_best_metrics(model, list_metrics)
-    metrics = compute_metrics(X_test, y_test, model)
-
-    # save model
-    model_file = os.path.join(module_path, "models", f"{params.model_name}.joblib")
-    joblib.dump(model, model_file)
-
-    res = "Not sent"
-
-    if run is not None:
-        record_metadata(cv_results, run)
-        record_metadata(metrics, run)
-        save_artifact(data_path=params.data_path, model_file=model_file, run=run)
-
-        # notify user
-        if params.email_address is not None:
-            url = f"{run._backend.get_display_address()}/{os.getenv('NEPTUNE_USER')}/{os.getenv('NEPTUNE_PROJECT')}/e/{run['sys/id'].fetch()}"
-            res = send_email(url, params.email_address)
-
-        run.stop()
-
-    return {'metrics' : metrics, "email_sent" : res}
+    # run modeling in the background
+    background_tasks.add_task(grid_run_model, params, run, X_train, X_test, y_train, y_test)
+    return {'res' : "The model is running. You will receive a mail if you provided your email address."}
 
 
 @app.get("/models", tags=["models"])

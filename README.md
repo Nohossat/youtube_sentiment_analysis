@@ -60,7 +60,7 @@ The application will be run on **http://127.0.0.1:8000/docs**.
 
 |Endpoints| Description|
 |---------|------------|
-|`/create_user`| If you want to access the premium features below, you must create an acoount first with your username and a valid email address.|
+|`/create_user`| If you want to access the premium features below, you must create an account first with your username and a valid email address.|
 |`/`| you can predict the polarity of several comments with a default model or a model you registered in the **models** folder|
 |`/train`| you can train (with cross-validation) a SVM classifier or a LGBM model with any dataset you pass as arguments. The neptune-log set to True, sends the results to the Neptune.ai project set in your environment. You can also be notified by email when the training is done.|
 |`/grid_train`| you can optimize a SVM classifier or LGBM hyperparameters. The model performance is recorded in Neptune.ai if needed. You can also be notified by email when the training is done.|

@@ -36,7 +36,7 @@ def test_train_false_model():
                                  "cv": False})
 
     assert response.status_code == 404
-    assert response.json() == {"res": "The model isn't registered in the API. You can choose between LGBM,SVC"}
+    assert response.json() == {"detail": "The model isn't registered in the API. You can choose between LGBM,SVC"}
 
 
 def test_train_false_dataset():
@@ -48,7 +48,7 @@ def test_train_false_dataset():
                                  "cv": False})
 
     assert response.status_code == 400
-    assert response.json() == {"res": "Can't load data"}
+    assert response.json() == {"detail": "Can't load data"}
 
 
 def test_grid_train_model():

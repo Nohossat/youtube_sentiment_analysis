@@ -18,8 +18,6 @@ Please replace the values in the `.env` to pass environment variables to your Do
 
 | Variable | Description |
 |---------|------------|
-|`LOGIN`| name used to authenticate in the API |
-|`PASSWORD`| password used to authenticate in the API |
 |`NEPTUNE_USER`, `NEPTUNE_PROJECT`, `NEPTUNE_API_TOKEN` | if you want to use Neptune.ai as a MLOps tool, you can provide your username, project name and API token.|
 |`SENDGRID_API_KEY`, `SENDGRID_API_KEY`| if you want to enable notifications in your API, you must provide your SendGrid API KEY and the email from which the notifications will be sent from. |
 
@@ -57,6 +55,8 @@ uvicorn main:app
 The application will be run on **http://127.0.0.1:8000/docs**.
 
 ### Endpoints
+
+Most of the endpoints are accessible if some credentials are provided. You can create a password with the `/create_user` endpoint. All the credentials are stored in a SQLITE database.
 
 |Endpoints| Description|
 |---------|------------|

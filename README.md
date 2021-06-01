@@ -10,6 +10,8 @@ For long-running models, you can choose to be notified when the training is over
 
 ## How to install the API
 
+**Python Version : >= 3.8**
+
 #### Prerequisites : Environment variables
 
 Some environment variables must be passed to make the API running.

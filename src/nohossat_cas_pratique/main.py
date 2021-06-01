@@ -148,8 +148,6 @@ def get_models():
     Fetch available models in the models folder
     :return: list
     """
-
-    print(module_path)
     main_folder = os.path.join(module_path, "models")
     models = []
     for (_, _, filenames) in os.walk(main_folder):
